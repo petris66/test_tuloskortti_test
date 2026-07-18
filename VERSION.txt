@@ -1,5 +1,1 @@
-Project    : Golf Voice Scorecard AI
-Repository : TEST
-Version    : Test Build 02.3
-Status     : Development
-Changes    : Mobile scorecard iteration, courses data foundation
+v0.2.5

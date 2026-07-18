@@ -1,6 +1,6 @@
 "use strict";
 
-const KEY = "golfVoiceScorecard-v0.2.3";
+const KEY = "golfVoiceScorecard-v0.2.5";
 const LEGACY_KEY = "golfVoiceScorecardTestBuild02";
 const MAX_PLAYERS = 4;
 const pars = [4,4,3,5,4,4,5,3,4,4,3,4,5,4,4,3,5,4];
@@ -450,8 +450,7 @@ function setScore(h, p, value, correcting = false) {
 
   const term = scoreTerm(value, pars[h]);
   announce(
-    `<span class="heard">${esc(state.names[p])}: ${esc(term)}, ${value} lyöntiä.</span><br>` +
-    `${correcting ? "Korjaus tehty" : "Tulos kirjattu"}, reikä ${h + 1}.`
+    `Tallennettu ${value}.`
   );
 }
 
@@ -513,31 +512,27 @@ function processSpeech(raw) {
     renderTable();
     updateNextPlayer();
 
-    if (!written.length) {
-      announce(`En saanut koko reiän tuloksia varmasti selville: “${esc(raw)}”.`);
-      return;
-    }
-
     const complete = state.scores[holeIndex]
       .slice(0, state.players)
       .every(value => value !== "");
 
-    if (complete && state.hole < 18) {
-      const finishedHole = state.hole;
+    if (!complete) {
+      announce("Tuloksia puuttuu.");
+      return;
+    }
+
+    render();
+
+    const values = state.scores[holeIndex]
+      .slice(0, state.players)
+      .join(", ");
+
+    if (state.hole < 18) {
       state.hole += 1;
       render();
-      announce(
-        `${written.join(", ")}. Reikä ${finishedHole} valmis. ` +
-        `Seuraava reikä ${state.hole}, par ${activePar()}.`
-      );
-    } else {
-      render();
-      const next = nextEmptyPlayer(holeIndex);
-      announce(
-        `${written.join(", ")} kirjattu.` +
-        (next !== null ? ` Seuraavana ${state.names[next]}.` : "")
-      );
     }
+
+    announce(`Tallennettu ${values}.`);
     return;
   }
 
