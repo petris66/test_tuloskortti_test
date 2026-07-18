@@ -15,11 +15,16 @@
 <body>
 <main class="app">
 <header class="hero">
-<div class="badge">TEST BUILD 02 · v0.2.3</div>
+<div class="badge">TEST BUILD 02 · v0.2.4</div>
 <h1>Golf Voice <strong>Scorecard AI</strong></h1>
 <div class="subtitle">Luonnollinen puhe · golftermit · korjaukset · undo</div>
 </header>
 
+<section class="card">
+<h2 class="title">KENTTÄ</h2>
+<select id="courseSelect" class="name-setup"><option value="">Valitse kenttä</option></select>
+<div id="courseInfo"></div>
+</section>
 <section class="card">
 <h2 class="title">KIERROKSEN ASETUKSET</h2>
 <div class="grid players" id="playerButtons"></div>
@@ -71,7 +76,7 @@
 <div class="test-note">Tämä on erillinen Test Build‑02. Se ei käytä OpenAI API:a: golftermien tulkinta tapahtuu selaimessa nopeasti ja ilman API-kuluja. Puheentunnistus tarvitsee selaimen tuen ja yleensä HTTPS-yhteyden.</div>
 <ol class="log" id="log"></ol>
 </section>
-<div class="version-note">Golf Voice Scorecard AI · v0.2.3</div>
+<div class="version-note">Golf Voice Scorecard AI · v0.2.4</div>
 </main>
 <script src="app.js?v=0.2.3"></script>
 </body></html>

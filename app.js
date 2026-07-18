@@ -11,11 +11,15 @@ let state = {
   hole: 1,
   scores: Array.from({ length: 18 }, () => Array(MAX_PLAYERS).fill("")),
   history: [],
-  speak: true
+  speak: true,
+  course: null
 };
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
+\nlet courses = [];\n
+async function loadCourses(){try{courses=await fetch("data/courses.json").then(r=>r.json());const s=$("#courseSelect");if(!s)return; s.innerHTML='<option value="">Valitse kenttä</option>'+courses.map(c=>`<option value="${c.id}">${c.name}</option>`).join(""); if(state.course){s.value=state.course;}}catch(e){}}\n
+
 
 function esc(value) {
   return String(value).replace(/[&<>"']/g, char => ({
@@ -216,13 +220,13 @@ const numbers = {
 };
 
 const termAliases = {
-  birdie: ["birdie","birdi","birdy","bird","pirdi","pyrdi","pordi","bordi","bordi","bordi","pirkku"],
+  birdie|birdi|birdy|pirdi|pirti|perdi|bördi|bordi: ["birdie|birdi|birdy|pirdi|pirti|perdi|bördi|bordi","birdi","birdy","bird","pirdi","pyrdi","pordi","bordi","bordi","bordi","pirkku"],
   par: ["par","paar","paari","paa","pari"],
-  bogey: ["bogey","bogi","boki","pogi","poki"],
+  bogey: ["bogey","bogi|bogey|boki|poki|pogi","boki","pogi","poki"],
   eagle: ["eagle","iigle","iikli","eegle"],
   albatross: ["albatross","albatros"],
-  triple: ["triple","tripla","kolmoisbogi"],
-  double: ["tupla","tuplabogi","double","doublebogey"]
+  triple: ["triple","tripla","kolmoisbogi|bogey|boki|poki|pogi"],
+  double: ["tupla","tuplabogi|bogey|boki|poki|pogi","double","doublebogey"]
 };
 
 function editDistance(a, b) {
@@ -285,11 +289,11 @@ function scoreFromTokens(tokens, index = 0, par = activePar()) {
 
   if (tokenMatches(token, termAliases.albatross)) return { score: par - 3, length: 1 };
   if (tokenMatches(token, termAliases.eagle)) return { score: par - 2, length: 1 };
-  if (tokenMatches(token, termAliases.birdie)) return { score: par - 1, length: 1 };
+  if (tokenMatches(token, termAliases.birdie|birdi|birdy|pirdi|pirti|perdi|bördi|bordi)) return { score: par - 1, length: 1 };
   if (tokenMatches(token, termAliases.par)) return { score: par, length: 1 };
   if (tokenMatches(token, termAliases.triple)) return { score: par + 3, length: 1 };
 
-  // Tuplabogi hyväksytään vain, kun puheessa on selvä tupla/double-sana.
+  // Tuplabogi|bogey|boki|poki|pogi hyväksytään vain, kun puheessa on selvä tupla/double-sana.
   if (tokenMatches(token, termAliases.double)) {
     const consumesBogey = tokenMatches(next, termAliases.bogey) ? 2 : 1;
     return { score: par + 2, length: consumesBogey };
@@ -431,7 +435,7 @@ function scoreTerm(score, par = activePar()) {
   if (score === par - 1) return "Birdie";
   if (score === par) return "Par";
   if (score === par + 1) return "Bogi";
-  if (score === par + 2) return "Tuplabogi";
+  if (score === par + 2) return "Tuplabogi|bogey|boki|poki|pogi";
   if (score === par + 3) return "Tripla";
   return `${score} lyöntiä`;
 }
@@ -541,7 +545,7 @@ function processSpeech(raw) {
   if (parsed.score === null || parsed.score < 1 || parsed.score > 20) {
     announce(
       `Kuulin “${esc(raw)}”, mutta en saanut tulosta varmasti selville. ` +
-      `Sano esimerkiksi par, birdie, bogi tai numero.`
+      `Sano esimerkiksi par, birdie|birdi|birdy|pirdi|pirti|perdi|bördi|bordi, bogi|bogey|boki|poki|pogi tai numero.`
     );
     return;
   }
@@ -595,7 +599,7 @@ function bestRecognitionCandidate(result) {
   candidates.sort((a, b) => b.confidence - a.confidence);
   const top = candidates[0]?.transcript || "";
 
-  // Do not replace a clear top result such as "bogi" with a lower-confidence
+  // Do not replace a clear top result such as "bogi|bogey|boki|poki|pogi" with a lower-confidence
   // alternative such as "double bogey".
   if (
     /\b(peru|undo|poista viimeinen)\b/.test(norm(top)) ||
@@ -663,6 +667,7 @@ $(".par-select").onclick = event => {
 };
 
 $("#voiceButton").onclick = startVoice;
+\n$("#courseSelect").onchange = e => { const c=courses.find(x=>x.id===e.target.value); if(c){state.course=c.id; window.coursePars=c.pars; announce(`Kenttä ${c.name} valittu.`); save();}};\n
 
 $$(".quick-score").forEach(button => {
   button.onclick = () => processSpeech(button.dataset.speech);
