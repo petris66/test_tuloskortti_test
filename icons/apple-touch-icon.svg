@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<rect width="512" height="512" rx="112" fill="#123d2b"/>
+<circle cx="256" cy="256" r="168" fill="#f6f4ed"/>
+<path d="M256 110c-48 0-86 38-86 86v70c0 48 38 86 86 86s86-38 86-86v-70c0-48-38-86-86-86zm-42 86c0-23 19-42 42-42s42 19 42 42v70c0 23-19 42-42 42s-42-19-42-42v-70z" fill="#123d2b"/>
+<path d="M148 260c0 60 48 108 108 108s108-48 108-108h-38c0 39-31 70-70 70s-70-31-70-70h-38zM237 364h38v48h-38zM198 405h116v38H198z" fill="#123d2b"/>
+<rect x="326" y="54" width="132" height="64" rx="18" fill="#c62828"/>
+<text x="392" y="96" text-anchor="middle" font-family="Arial" font-size="34" font-weight="800" fill="#fff">TEST</text>
+</svg>
