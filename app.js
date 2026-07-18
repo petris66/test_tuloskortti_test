@@ -1,6 +1,6 @@
 "use strict";
 
-const KEY = "golfVoiceScorecard-v0.2.1";
+const KEY = "golfVoiceScorecard-v0.2.2";
 const LEGACY_KEY = "golfVoiceScorecardTestBuild02";
 const MAX_PLAYERS = 4;
 const pars = [4,4,3,5,4,4,5,3,4,4,3,4,5,4,4,3,5,4];
@@ -215,6 +215,44 @@ const numbers = {
   kymmenen:10, kymppi:10
 };
 
+const termAliases = {
+  birdie: ["birdie","birdi","birdy","bird","pirdi","pyrdi","pordi","bordi","bordi","bordi","pirkku"],
+  par: ["par","paar","paari","paa","pari"],
+  bogey: ["bogey","bogi","boki","pogi","poki"],
+  eagle: ["eagle","iigle","iikli","eegle"],
+  albatross: ["albatross","albatros"],
+  triple: ["triple","tripla","kolmoisbogi"],
+  double: ["tupla","tuplabogi","double","doublebogey"]
+};
+
+function editDistance(a, b) {
+  const rows = b.length + 1;
+  const cols = a.length + 1;
+  const dp = Array.from({ length: rows }, () => Array(cols).fill(0));
+  for (let i = 0; i < rows; i += 1) dp[i][0] = i;
+  for (let j = 0; j < cols; j += 1) dp[0][j] = j;
+  for (let i = 1; i < rows; i += 1) {
+    for (let j = 1; j < cols; j += 1) {
+      dp[i][j] = Math.min(
+        dp[i - 1][j] + 1,
+        dp[i][j - 1] + 1,
+        dp[i - 1][j - 1] + (b[i - 1] === a[j - 1] ? 0 : 1)
+      );
+    }
+  }
+  return dp[rows - 1][cols - 1];
+}
+
+function tokenMatches(token, aliases) {
+  if (aliases.includes(token)) return true;
+  if (token.length < 4) return false;
+  return aliases.some(alias =>
+    alias.length >= 4 &&
+    Math.abs(alias.length - token.length) <= 1 &&
+    editDistance(token, alias) <= 1
+  );
+}
+
 function numberFrom(words) {
   for (const word of words) {
     if (/^\d{1,2}$/.test(word)) {
@@ -241,19 +279,98 @@ function playerFrom(text) {
   return null;
 }
 
+function scoreFromTokens(tokens, index = 0, par = activePar()) {
+  const token = tokens[index] || "";
+  const next = tokens[index + 1] || "";
+
+  if (tokenMatches(token, termAliases.albatross)) return { score: par - 3, length: 1 };
+  if (tokenMatches(token, termAliases.eagle)) return { score: par - 2, length: 1 };
+  if (tokenMatches(token, termAliases.birdie)) return { score: par - 1, length: 1 };
+  if (tokenMatches(token, termAliases.par)) return { score: par, length: 1 };
+  if (tokenMatches(token, termAliases.triple)) return { score: par + 3, length: 1 };
+
+  // Tuplabogi hyväksytään vain, kun puheessa on selvä tupla/double-sana.
+  if (tokenMatches(token, termAliases.double)) {
+    const consumesBogey = tokenMatches(next, termAliases.bogey) ? 2 : 1;
+    return { score: par + 2, length: consumesBogey };
+  }
+
+  if (tokenMatches(token, termAliases.bogey)) return { score: par + 1, length: 1 };
+
+  const number = numberFrom([token]);
+  if (number !== null) return { score: number, length: 1 };
+
+  return null;
+}
+
+function extractScoreMentions(text) {
+  const tokens = norm(text).split(" ").filter(Boolean);
+  const mentions = [];
+
+  for (let i = 0; i < tokens.length; i += 1) {
+    const parsed = scoreFromTokens(tokens, i);
+    if (!parsed) continue;
+    mentions.push({
+      score: parsed.score,
+      tokenIndex: i,
+      tokenLength: parsed.length
+    });
+    i += parsed.length - 1;
+  }
+  return { tokens, mentions };
+}
+
 function golfScore(text) {
-  const normalized = norm(text);
-  const par = activePar();
+  return extractScoreMentions(text).mentions[0]?.score ?? null;
+}
 
-  if (/\b(albatross|albatros)\b/.test(normalized)) return par - 3;
-  if (/\b(eagle|iigle|iikli)\b/.test(normalized)) return par - 2;
-  if (/\b(birdie|birdi|birdy|pirdi|pördi|bordi|bördi|pirkku)\b/.test(normalized)) return par - 1;
-  if (/\b(par|paar|paari|pariin)\b/.test(normalized)) return par;
-  if (/\b(triple|tripla|kolmoisbogi|kolmois bogi)\b/.test(normalized)) return par + 3;
-  if (/\b(double bogey|double|tupla|tuplabogi|tupla bogi)\b/.test(normalized)) return par + 2;
-  if (/\b(bogey|bogi|boki)\b/.test(normalized)) return par + 1;
+function playerMentions(tokens) {
+  const result = [];
+  for (let player = 0; player < state.players; player += 1) {
+    const nameTokens = norm(state.names[player]).split(" ").filter(Boolean);
+    if (!nameTokens.length) continue;
 
-  return numberFrom(normalized.split(" "));
+    for (let i = 0; i <= tokens.length - nameTokens.length; i += 1) {
+      if (nameTokens.every((nameToken, offset) => tokens[i + offset] === nameToken)) {
+        result.push({ player, tokenIndex: i });
+      }
+    }
+  }
+  return result.sort((a, b) => a.tokenIndex - b.tokenIndex);
+}
+
+function parseMultipleScores(raw) {
+  const { tokens, mentions } = extractScoreMentions(raw);
+  if (mentions.length < 2) return null;
+
+  const namedPlayers = playerMentions(tokens);
+  const assignments = [];
+  const alreadyAssigned = new Set();
+
+  mentions.forEach((mention, mentionIndex) => {
+    let player = null;
+
+    // Prefer the closest unused player name before this score.
+    const preceding = namedPlayers
+      .filter(item => item.tokenIndex <= mention.tokenIndex && !alreadyAssigned.has(item.player))
+      .sort((a, b) => b.tokenIndex - a.tokenIndex)[0];
+
+    if (preceding) player = preceding.player;
+
+    // If no name was spoken, assign scores in the current player order.
+    if (player === null) {
+      const candidates = Array.from({ length: state.players }, (_, i) => i)
+        .filter(i => !alreadyAssigned.has(i));
+      player = candidates[0] ?? null;
+    }
+
+    if (player !== null) {
+      alreadyAssigned.add(player);
+      assignments.push({ player, score: mention.score });
+    }
+  });
+
+  return assignments.length >= 2 ? assignments : null;
 }
 
 function plainText(value) {
@@ -360,6 +477,7 @@ function parseCandidate(raw) {
   return { raw, normalized, correcting, score, player };
 }
 
+
 function processSpeech(raw) {
   const normalized = norm(raw);
   if (!normalized) return;
@@ -374,14 +492,65 @@ function processSpeech(raw) {
     return;
   }
 
+  const batch = parseMultipleScores(raw);
+  if (batch) {
+    const holeIndex = state.hole - 1;
+    const written = [];
+
+    batch.forEach(({ player, score }) => {
+      if (player >= state.players || score < 1 || score > 20) return;
+      const oldValue = state.scores[holeIndex][player];
+      pushHistory(holeIndex, player, oldValue, score);
+      state.scores[holeIndex][player] = score;
+      written.push(`${state.names[player]} ${scoreTerm(score, pars[holeIndex])}`);
+    });
+
+    save();
+    renderTable();
+    updateNextPlayer();
+
+    if (!written.length) {
+      announce(`En saanut koko reiän tuloksia varmasti selville: “${esc(raw)}”.`);
+      return;
+    }
+
+    const complete = state.scores[holeIndex]
+      .slice(0, state.players)
+      .every(value => value !== "");
+
+    if (complete && state.hole < 18) {
+      const finishedHole = state.hole;
+      state.hole += 1;
+      render();
+      announce(
+        `${written.join(", ")}. Reikä ${finishedHole} valmis. ` +
+        `Seuraava reikä ${state.hole}, par ${activePar()}.`
+      );
+    } else {
+      render();
+      const next = nextEmptyPlayer(holeIndex);
+      announce(
+        `${written.join(", ")} kirjattu.` +
+        (next !== null ? ` Seuraavana ${state.names[next]}.` : "")
+      );
+    }
+    return;
+  }
+
   const parsed = parseCandidate(raw);
   if (parsed.score === null || parsed.score < 1 || parsed.score > 20) {
-    announce(`En saanut tulosta varmasti selville: “${esc(raw)}”. Sano esimerkiksi birdie, par, bogi tai numero.`);
+    announce(
+      `Kuulin “${esc(raw)}”, mutta en saanut tulosta varmasti selville. ` +
+      `Sano esimerkiksi par, birdie, bogi tai numero.`
+    );
     return;
   }
 
   if (parsed.player === null) {
-    announce(`Reiän ${state.hole} kaikkien pelaajien tulokset on jo kirjattu. Sano pelaajan nimi korjauksen yhteydessä tai siirry seuraavalle reiälle.`);
+    announce(
+      `Reiän ${state.hole} kaikkien pelaajien tulokset on jo kirjattu. ` +
+      `Sano pelaajan nimi korjauksen yhteydessä tai siirry seuraavalle reiälle.`
+    );
     return;
   }
 
@@ -413,20 +582,41 @@ function processSpeech(raw) {
   }
 }
 
+
 function bestRecognitionCandidate(result) {
   const candidates = [];
   for (let i = 0; i < result.length; i += 1) {
-    candidates.push(result[i].transcript);
+    candidates.push({
+      transcript: result[i].transcript,
+      confidence: Number(result[i].confidence) || 0
+    });
   }
 
-  return candidates.find(candidate => {
-    const normalized = norm(candidate);
-    return /\b(peru|undo|poista viimeinen)\b/.test(normalized) ||
-      golfScore(candidate) !== null;
-  }) || candidates[0] || "";
+  candidates.sort((a, b) => b.confidence - a.confidence);
+  const top = candidates[0]?.transcript || "";
+
+  // Do not replace a clear top result such as "bogi" with a lower-confidence
+  // alternative such as "double bogey".
+  if (
+    /\b(peru|undo|poista viimeinen)\b/.test(norm(top)) ||
+    golfScore(top) !== null
+  ) {
+    return top;
+  }
+
+  return candidates.find(item =>
+    /\b(peru|undo|poista viimeinen)\b/.test(norm(item.transcript)) ||
+    golfScore(item.transcript) !== null
+  )?.transcript || top;
 }
 
 function startVoice() {
+  // iOS requires a user gesture before speech synthesis can reliably speak.
+  if (state.speak && "speechSynthesis" in window) {
+    refreshVoices();
+    window.speechSynthesis.resume();
+  }
+
   const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!Recognition) {
     announce("Tämä selain ei tue Web Speech -puheentunnistusta. Testaa Chrome- tai Edge-selaimella HTTPS-osoitteessa.");

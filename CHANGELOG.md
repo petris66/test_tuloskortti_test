@@ -1,12 +1,10 @@
 # Muutoshistoria
 
-## v0.2.1
+## v0.2.2
 
-- Korjattu iPhonen sovelluskuvake.
-- Parannettu puhesynteesin käynnistystä.
-- Lisätty puheäänen testipainike.
-- Laajennettu birdie-, par-, bogi- ja muiden golftermien tunnistusta.
-- Hyödynnetään puheentunnistuksen vaihtoehtoisia tuloksia.
-- Korjattu 1–4 pelaajan automaattinen kirjausjärjestys.
-- Lisätty seuraavan pelaajan näkyvä ilmoitus ja tulosruudun korostus.
-- Lisätty resurssien versiointi selaimen välimuistin ohittamiseksi.
+- Korjattu tuloskortin mobiiliskaalaus.
+- Parannettu golftermien puheentunnistusta.
+- Korjattu bogin virheellinen muuttuminen tuplabogiksi.
+- Lisätty koko reiän monipelaajakirjaus yhdellä komennolla.
+- Parannettu iPhonen puhesynteesin alustusta.
+- Säilytetty kuvakkeet olemassa olevassa icons-hakemistossa.

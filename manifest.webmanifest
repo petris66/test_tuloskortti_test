@@ -1,7 +1,7 @@
 {
   "name": "Golf Voice Scorecard AI",
   "short_name": "Golf Voice",
-  "start_url": "./?v=0.2.1",
+  "start_url": "./?v=0.2.2",
   "scope": "./",
   "display": "standalone",
   "background_color": "#173f18",
