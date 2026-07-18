@@ -1,3 +1,6 @@
-Golf Voice Scorecard AI TEST
-v3.8.0-dev
-Build 1
+Project    : Golf Voice Scorecard AI
+Repository : TEST
+Version    : 3.8.0-dev
+Build      : 01
+Status     : Development
+Release    : 2026-07-18
