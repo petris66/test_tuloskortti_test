@@ -1,98 +1,72 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fi">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#123d2b">
-  <meta name="description" content="Golf Voice Scorecard AI TEST">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="Golf Voice TEST">
-  <title>Golf Voice Scorecard AI TEST</title>
-  <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.svg">
-  <link rel="stylesheet" href="./css/style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#173f18">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Golf Voice TEST">
+<title>Golf Voice Scorecard AI – Test Build 02</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="test-watermark" aria-hidden="true">TEST</div>
+<main class="app">
+<header class="hero">
+<div class="badge">TEST BUILD 02</div>
+<h1>Golf Voice <strong>Scorecard AI</strong></h1>
+<div class="subtitle">Luonnollinen puhe · golftermit · korjaukset · undo</div>
+</header>
 
-  <header class="app-header">
-    <div>
-      <p class="eyebrow">Golf Voice</p>
-      <h1>Scorecard AI <span class="test-word">TEST</span></h1>
-    </div>
-    <div class="build-info">
-      <strong>TEST</strong>
-      <span id="version-label">v3.8.0-dev</span>
-    </div>
-  </header>
+<section class="card">
+<h2 class="title">KIERROKSEN ASETUKSET</h2>
+<div class="grid players" id="playerButtons"></div>
+<p style="margin-bottom:6px"><b>Pelaajien nimet</b></p>
+<div class="grid" id="nameInputs"></div>
+</section>
 
-  <main class="app-shell">
-    <section class="card status-card">
-      <div>
-        <p class="section-label">Build 01</p>
-        <h2>TEST-ympäristö on valmis</h2>
-        <p>Projektin perusrakenne, PWA-tuki ja TEST-brändäys ovat käytössä.</p>
-      </div>
-      <span class="status-pill">DEVELOPMENT</span>
-    </section>
+<section class="card">
+<div class="hole-head">
+<div><h2 class="title">NYKYINEN REIKÄ</h2><div class="par-select"><span><b>Par:</b></span><button class="btn" data-par="3">3</button><button class="btn active" data-par="4">4</button><button class="btn" data-par="5">5</button></div></div>
+<div class="hole-number" id="holeNumber">1</div>
+</div>
+</section>
 
-    <section class="card">
-      <h2>Kierroksen aloitus</h2>
-      <div class="form-grid">
-        <label>Pelaajan nimi
-          <input id="player-name" type="text" placeholder="Esim. Petri">
-        </label>
-        <label>Kenttä
-          <select disabled><option>Kenttähaku lisätään Build 02:ssa</option></select>
-        </label>
-        <label>Tee
-          <select disabled><option>Tiin valinta lisätään myöhemmin</option></select>
-        </label>
-      </div>
-      <button class="primary-button" type="button" disabled>Aloita kierros</button>
-    </section>
+<section class="card">
+<h2 class="title">PUHEKIRJAUS</h2>
+<button class="btn primary" id="voiceButton">🎤 Anna tulos puheella</button>
+<div class="status" id="status">Paina mikrofonia ja sano esimerkiksi <b>“birdie”</b>, <b>“Petri par”</b> tai <b>“korjaa neloseksi”</b>.</div>
+<div class="examples">Toimivia ilmauksia: birdie, par, bogi, tupla, triple, eagle, neljä, nelonen, vitonen, “Petri viisi”, “minulle bogi”, “peru”, “poista viimeinen”, “korjaa Petrille neljä”.</div>
+<div class="grid quick">
+<button class="btn quick-score" data-speech="birdie">Birdie</button>
+<button class="btn quick-score" data-speech="par">Par</button>
+<button class="btn quick-score" data-speech="bogi">Bogi</button>
+<button class="btn quick-score" data-speech="tupla">Tupla</button>
+<button class="btn quick-score" data-speech="peru">Peru</button>
+</div>
+<label class="toggle"><span>🔊 Puhu vahvistukset</span><input id="speakToggle" type="checkbox" checked></label>
+</section>
 
-    <section class="card voice-card">
-      <div>
-        <p class="section-label">Puheohjaus</p>
-        <h2>Äänipainike</h2>
-        <p>Puheohjaus aktivoidaan myöhemmässä kehitysvaiheessa.</p>
-      </div>
-      <button id="voice-button" class="voice-button" type="button">
-        <span class="mic">🎙️</span><span>PUHE</span><small>TEST</small>
-      </button>
-    </section>
+<section class="card">
+<h2 class="title">TULOSKORTTI</h2>
+<div class="table-wrap"><table><thead id="thead"></thead><tbody id="tbody"></tbody><tfoot id="tfoot"></tfoot></table></div>
+</section>
 
-    <section class="card">
-      <div class="section-heading">
-        <div><p class="section-label">Esikatselu</p><h2>Tuloskortti</h2></div>
-        <span>18 reikää</span>
-      </div>
-      <div class="scorecard-table-wrap">
-        <table>
-          <thead><tr><th>Reikä</th><th>Par</th><th>HCP</th><th>Tulos</th></tr></thead>
-          <tbody id="scorecard-body"></tbody>
-        </table>
-      </div>
-    </section>
+<section class="card">
+<h2 class="title">TOIMINNOT</h2>
+<div class="grid actions">
+<button class="btn" id="prevHole">← Edellinen reikä</button>
+<button class="btn" id="nextHole">Seuraava reikä →</button>
+<button class="btn" id="undoButton">↶ Peru viimeisin kirjaus</button>
+<button class="btn danger" id="resetButton">Aloita uusi testikierros</button>
+</div>
+</section>
 
-    <section class="card">
-      <h2>Build 01 sisältää</h2>
-      <ul>
-        <li>TEST-brändäyksen ja versionumeron</li>
-        <li>Mobiiliystävällisen käyttöliittymän rungon</li>
-        <li>PWA-manifestin ja service workerin</li>
-        <li>README-, CHANGELOG- ja VERSION-tiedostot</li>
-      </ul>
-    </section>
-  </main>
-
-  <footer class="app-footer">
-    <span>Golf Voice Scorecard AI</span>
-    <span id="footer-build">TEST · v3.8.0-dev · Build 01</span>
-  </footer>
-
-  <script src="./js/app.js" defer></script>
-</body>
-</html>
+<section class="card">
+<h2 class="title">TESTILOKI</h2>
+<div class="test-note">Tämä on erillinen Test Build‑02. Se ei käytä OpenAI API:a: golftermien tulkinta tapahtuu selaimessa nopeasti ja ilman API-kuluja. Puheentunnistus tarvitsee selaimen tuen ja yleensä HTTPS-yhteyden.</div>
+<ol class="log" id="log"></ol>
+</section>
+</main>
+<script src="app.js"></script>
+</body></html>

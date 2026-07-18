@@ -1,24 +1,12 @@
-# Changelog
+# Muutoshistoria
 
-## [3.8.0-dev] Build 01 - 2026-07-18
+## Test Build-02
 
-### Added
-- virallinen TEST-projektirakenne
-- TEST-otsikko, versionumero ja vesileima
-- mobiiliystävällinen käyttöliittymärunko
-- pelaajan nimen kenttä
-- 18 reiän tuloskortin esikatselu
-- TEST-merkitty puhepainike
-- PWA-manifesti ja service worker
-- README, CHANGELOG, VERSION, LICENSE ja .gitignore
-
-### Known issues
-- kenttätietokanta puuttuu
-- kentän ja tiin valinta eivät toimi
-- tuloksia ei voi vielä syöttää
-- puheohjaus ja GPS puuttuvat
-
-### Next
-- FIN-1.0-kenttätietokannan pohja
-- kenttähaku
-- tiin valinnan valmistelu
+- Lisätty golftermien tulkinta reiän parin perusteella.
+- Lisätty puhekielisten lyöntimäärien tunnistus.
+- Lisätty pelaajan nimen tunnistus.
+- Lisätty korjaus- ja perumiskomennot.
+- Lisätty automaattinen siirtyminen seuraavalle reiälle.
+- Lisätty puhutut vahvistukset.
+- Erotettu HTML, CSS ja JavaScript omiin tiedostoihinsa.
+- Korjattu ZIP-rakenne: tiedostot ovat suoraan paketin juuressa.

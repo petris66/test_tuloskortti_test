@@ -1,24 +1,9 @@
 {
-  "name": "Golf Voice Scorecard AI TEST",
+  "name": "Golf Voice Scorecard AI – Test Build-02",
   "short_name": "Golf Voice TEST",
-  "description": "Golf Voice Scorecard AI -sovelluksen TEST-kehitysversio.",
-  "lang": "fi",
   "start_url": "./index.html",
-  "scope": "./",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#f6f4ed",
-  "theme_color": "#123d2b",
-  "categories": [
-    "sports",
-    "utilities"
-  ],
-  "icons": [
-    {
-      "src": "./icons/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
-  ]
+  "background_color": "#173f18",
+  "theme_color": "#173f18",
+  "lang": "fi"
 }

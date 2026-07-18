@@ -1,53 +1,36 @@
-# Golf Voice Scorecard AI TEST
+# Golf Voice Scorecard AI – Test Build-02
 
-Puheohjattavan golf-tuloskortin erillinen kehitys- ja testausympäristö.
+Korvaava Build-02-paketti. ZIP-tiedoston sisältö purkautuu suoraan tiedostoiksi ilman ylimääräistä pääkansiota.
 
-## Nykyinen versio
-- Version: `3.8.0-dev`
-- Build: `01`
-- Status: `Development`
-- Release: `2026-07-18`
+## Tiedostot
 
-## Build 01 sisältää
-- TEST-brändäyksen
-- mobiiliystävällisen käyttöliittymärungon
-- 18 reiän tuloskortin esikatselun
-- PWA-manifestin
-- service workerin
-- README-, CHANGELOG- ja VERSION-tiedostot
+- `index.html` – käyttöliittymän rakenne
+- `style.css` – ulkoasu ja mobiilinäkymä
+- `app.js` – tuloskortin, puheen ja tallennuksen toiminnallisuus
+- `manifest.webmanifest` – verkkosovelluksen perustiedot
+- `CHANGELOG.md` – version muutokset
 
-Build 01 ei vielä sisällä kenttätietokantaa, kenttähakua, tiin valintaa, toimivaa tuloskorttia, puheohjausta eikä GPS:ää.
+## Testaaminen
 
-## Asennus TEST-repositoryyn
-1. Pura ZIP.
-2. Korvaa TEST-repositoryn nykyiset tiedostot paketin tiedostoilla.
-3. Poista vanhat `test.txt`-dummy-tiedostot.
-4. Commitoi esimerkiksi viestillä `Add v3.8.0-dev Build 01`.
-5. Ota GitHub Pages käyttöön vasta, kun tiedostot näkyvät oikein.
+1. Pura ZIP tyhjään kansioon.
+2. Avaa `index.html` selaimessa.
+3. Painikkeet ja tuloskortti toimivat myös paikallisesti.
+4. Mikrofonilla tehtävä puheentunnistus toimii varmimmin Chrome- tai Edge-selaimessa HTTPS-osoitteessa, esimerkiksi GitHub Pagesissa tai Vercelissä.
 
-## Kehitysmalli
-Jokainen julkaisu tehdään uutena muuttumattomana ZIP-buildina. Vanhaa buildia ei korvata, vaan korjaukset julkaistaan seuraavana buildina.
+## Build-02:n ominaisuudet
 
-## Roadmap
-- [x] Build 01: perusrakenne ja TEST-käyttöliittymä
-- [ ] FIN-1.0-kenttätietokanta
-- [ ] kenttähaku
-- [ ] tiin valinta
-- [ ] par-, HCP- ja pituustiedot
-- [ ] toimiva tuloskortti
-- [ ] puheohjaus
-- [ ] GPS
-- [ ] suosikit ja viimeksi käytetyt kentät
-- [ ] omat kentät
-- [ ] pilvisynkronointi
-- [ ] tilastot
+- Birdie, par, bogi, tupla, triple ja eagle muunnetaan reiän parin perusteella lyöntimääräksi.
+- Puhekieliset numerot, kuten nelonen, vitonen ja seiska.
+- Pelaajan nimi voidaan sanoa tuloksen yhteydessä.
+- “Minulle bogi” kohdistuu ensimmäiseen pelaajaan.
+- “Korjaa Petrille neljä”.
+- “Peru” ja “poista viimeinen”.
+- Automaattinen siirtyminen seuraavalle reiälle, kun kaikkien pelaajien tulokset on kirjattu.
+- Reiän parin valinta.
+- Puhutut vahvistukset.
+- Kierroksen säilytys selaimen localStoragessa.
+- Build-02 käyttää omaa tallennusavainta eikä sotke aikaisemman version tietoja.
 
-## Tunnetut puutteet
-- Kentän ja tiin valinnat eivät vielä toimi.
-- Kierrosta ei voi aloittaa.
-- Tuloskortti on vain esikatselu.
-- Puhepainike näyttää vain ilmoituksen.
-- Lopulliset PNG-PWA-kuvakkeet puuttuvat.
+## Rajaukset
 
-## Seuraava build
-Build 02:n tavoite on FIN-1.0-kenttätietokannan pohja ja kenttähaun ensimmäinen versio.
+GPS, Garmin-yhteys ja OpenAI API eivät vielä kuulu tähän Build-02-versioon.
