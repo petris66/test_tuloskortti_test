@@ -1,3 +1,10 @@
+# v0.2.6
+
+- Continued work on hole based score handling.
+- Added speech synthesis initialization on application startup.
+- Kept short voice confirmations for score saving.
+- Removed automatic hole advance after batch score save to allow controlled flow.
+
 # v0.2.5
 
 - Muutettu reiän kirjauslogiikkaa kohti koko reiän tulosten käsittelyä.
