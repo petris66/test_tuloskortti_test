@@ -7,13 +7,15 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Golf Voice TEST">
 <title>Golf Voice Scorecard AI – Test Build 02</title>
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.webmanifest?v=0.2.1">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png?v=0.2.1a">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=0.2.1a">
+<link rel="stylesheet" href="style.css?v=0.2.1">
 </head>
 <body>
 <main class="app">
 <header class="hero">
-<div class="badge">TEST BUILD 02</div>
+<div class="badge">TEST BUILD 02 · v0.2.1a</div>
 <h1>Golf Voice <strong>Scorecard AI</strong></h1>
 <div class="subtitle">Luonnollinen puhe · golftermit · korjaukset · undo</div>
 </header>
@@ -35,6 +37,7 @@
 <section class="card">
 <h2 class="title">PUHEKIRJAUS</h2>
 <button class="btn primary" id="voiceButton">🎤 Anna tulos puheella</button>
+<div class="next-player" id="nextPlayer">Seuraava kirjaus: Petri</div>
 <div class="status" id="status">Paina mikrofonia ja sano esimerkiksi <b>“birdie”</b>, <b>“Petri par”</b> tai <b>“korjaa neloseksi”</b>.</div>
 <div class="examples">Toimivia ilmauksia: birdie, par, bogi, tupla, triple, eagle, neljä, nelonen, vitonen, “Petri viisi”, “minulle bogi”, “peru”, “poista viimeinen”, “korjaa Petrille neljä”.</div>
 <div class="grid quick">
@@ -44,6 +47,7 @@
 <button class="btn quick-score" data-speech="tupla">Tupla</button>
 <button class="btn quick-score" data-speech="peru">Peru</button>
 </div>
+<button class="btn voice-test" id="testSpeechButton">🔊 Testaa puheääni</button>
 <label class="toggle"><span>🔊 Puhu vahvistukset</span><input id="speakToggle" type="checkbox" checked></label>
 </section>
 
@@ -67,6 +71,7 @@
 <div class="test-note">Tämä on erillinen Test Build‑02. Se ei käytä OpenAI API:a: golftermien tulkinta tapahtuu selaimessa nopeasti ja ilman API-kuluja. Puheentunnistus tarvitsee selaimen tuen ja yleensä HTTPS-yhteyden.</div>
 <ol class="log" id="log"></ol>
 </section>
+<div class="version-note">Golf Voice Scorecard AI · v0.2.1a</div>
 </main>
-<script src="app.js"></script>
+<script src="app.js?v=0.2.1"></script>
 </body></html>

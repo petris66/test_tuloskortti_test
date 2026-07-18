@@ -13,3 +13,24 @@ h1{margin:22px 0 8px;font-family:Georgia,serif;font-size:clamp(38px,10vw,66px);l
 .actions{grid-template-columns:1fr 1fr}.log{max-height:170px;overflow:auto;padding-left:22px;font-size:14px}.test-note{padding:12px;border-left:5px solid var(--red);background:#fff1f1;border-radius:10px;line-height:1.4}
 label.toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--mint);font-weight:bold}
 @media(max-width:520px){.card{padding:15px 11px;border-radius:21px}.hero{padding-top:34px}.quick{grid-template-columns:repeat(3,1fr)}.players{gap:6px}.players .btn{padding:7px}.actions{grid-template-columns:1fr}.hole-number{font-size:66px}}
+
+.next-player {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255,255,255,.08);
+  font-weight: 700;
+}
+.score.next-score {
+  outline: 3px solid rgba(255,255,255,.65);
+  outline-offset: 1px;
+}
+.voice-test {
+  margin-top: 10px;
+}
+.version-note {
+  text-align: center;
+  opacity: .7;
+  font-size: .82rem;
+  margin: 18px 0 8px;
+}

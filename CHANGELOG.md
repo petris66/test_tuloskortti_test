@@ -1,12 +1,12 @@
 # Muutoshistoria
 
-## Test Build-02
+## v0.2.1
 
-- Lisätty golftermien tulkinta reiän parin perusteella.
-- Lisätty puhekielisten lyöntimäärien tunnistus.
-- Lisätty pelaajan nimen tunnistus.
-- Lisätty korjaus- ja perumiskomennot.
-- Lisätty automaattinen siirtyminen seuraavalle reiälle.
-- Lisätty puhutut vahvistukset.
-- Erotettu HTML, CSS ja JavaScript omiin tiedostoihinsa.
-- Korjattu ZIP-rakenne: tiedostot ovat suoraan paketin juuressa.
+- Korjattu iPhonen sovelluskuvake.
+- Parannettu puhesynteesin käynnistystä.
+- Lisätty puheäänen testipainike.
+- Laajennettu birdie-, par-, bogi- ja muiden golftermien tunnistusta.
+- Hyödynnetään puheentunnistuksen vaihtoehtoisia tuloksia.
+- Korjattu 1–4 pelaajan automaattinen kirjausjärjestys.
+- Lisätty seuraavan pelaajan näkyvä ilmoitus ja tulosruudun korostus.
+- Lisätty resurssien versiointi selaimen välimuistin ohittamiseksi.
