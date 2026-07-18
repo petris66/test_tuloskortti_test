@@ -1,6 +1,6 @@
 "use strict";
 
-const KEY = "golfVoiceScorecard-v0.2.2";
+const KEY = "golfVoiceScorecard-v0.2.3";
 const LEGACY_KEY = "golfVoiceScorecardTestBuild02";
 const MAX_PLAYERS = 4;
 const pars = [4,4,3,5,4,4,5,3,4,4,3,4,5,4,4,3,5,4];
