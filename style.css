@@ -21,6 +21,15 @@ th:nth-child(2),td:nth-child(2){width:42px}
 label.toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--mint);font-weight:bold}
 @media(max-width:520px){.card{padding:15px 11px;border-radius:21px}.hero{padding-top:34px}.quick{grid-template-columns:repeat(3,1fr)}.players{gap:6px}.players .btn{padding:7px}.actions{grid-template-columns:1fr}.hole-number{font-size:66px}}
 
+.nine-label {
+  margin: -6px 0 10px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  color: var(--green);
+  text-transform: uppercase;
+}
+
 .next-player {
   margin-top: 12px;
   padding: 10px 12px;

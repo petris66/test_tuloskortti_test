@@ -20,7 +20,7 @@ let state = {
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 let courses = [];
-async function loadCourses(){try{courses=await fetch("data/courses.json").then(r=>r.json());const s=$("#courseSelect");if(!s)return; s.innerHTML='<option value="">Valitse kenttä</option>'+courses.map(c=>`<option value="${c.id}">${c.name}</option>`).join(""); if(state.course){s.value=state.course; const c=courses.find(x=>x.id===state.course); if(c) coursePars=[...c.pars];}}catch(e){ console.error("Kenttien lataus epäonnistui:", e); }}
+async function loadCourses(){try{courses=await fetch("data/courses.json").then(r=>r.json());const s=$("#courseSelect");if(!s)return; s.innerHTML='<option value="">Valitse kenttä</option>'+courses.map(c=>`<option value="${c.id}">${c.name}</option>`).join(""); if(state.course){s.value=state.course; const c=courses.find(x=>x.id===state.course); if(c) coursePars=[...c.pars];}}catch(e){ console.error("Kenttien lataus epäonnistui:", e); const s=$("#courseSelect"); if(s) s.innerHTML='<option value="">Kenttiä ei saatu ladattua</option>'; }}
 
 
 function esc(value) {
@@ -159,8 +159,8 @@ function renderTable() {
 
   const nextPlayer = nextEmptyPlayer();
 
-  $("#tbody").innerHTML = Array.from({ length: 18 }, (_, h) =>
-    `<tr class="${h + 1 === state.hole ? "current-row" : ""}">
+  $("#tbody").innerHTML = Array.from({ length: 18 }, (_, h) => {
+    const row = `<tr class="${h + 1 === state.hole ? "current-row" : ""}">
       <td><b>${h + 1}</b></td>
       <td>${(coursePars || pars)[h]}</td>
       ${Array.from({ length: state.players }, (_, p) =>
@@ -168,8 +168,21 @@ function renderTable() {
           h + 1 === state.hole && p === nextPlayer ? "next-score" : ""
         }" inputmode="numeric" data-h="${h}" data-p="${p}" value="${esc(state.scores[h][p])}"></td>`
       ).join("")}
-    </tr>`
-  ).join("");
+    </tr>`;
+
+    if (h === 8) {
+      const front = Array.from({ length: state.players }, (_, p) =>
+        state.scores.slice(0, 9).reduce((sum, r) => sum + (Number(r[p]) || 0), 0)
+      );
+
+      return row +
+        `<tr class="nine-total"><td colspan="2">Ulos</td>${
+          front.map(total => `<td>${total}</td>`).join("")
+        }</tr>`;
+    }
+
+    return row;
+  }).join("");
 
   const totals = Array.from({ length: state.players }, (_, p) =>
     state.scores.reduce((sum, row) => sum + (Number(row[p]) || 0), 0)
@@ -196,10 +209,10 @@ function renderTable() {
   );
 
   $("#tfoot").innerHTML =
-    `<tr class="nine-total"><td colspan="2">Etu 1-9</td>${
+    `<tr class="nine-total"><td colspan="2">Ulos</td>${
       frontNine.map(total => `<td>${total}</td>`).join("")
     }</tr>
-    <tr class="nine-total"><td colspan="2">Taka 10-18</td>${
+    <tr class="nine-total"><td colspan="2">Sisään</td>${
       backNine.map(total => `<td>${total}</td>`).join("")
     }</tr>
     <tr class="total"><td colspan="2">Yhteensä</td>${
@@ -478,22 +491,9 @@ function scoreTerm(score, par = activePar()) {
   if (score === par - 1) return "Birdie";
   if (score === par) return "Par";
   if (score === par + 1) return "Bogi";
-  if (score === par + 2) return "Tuplabogi|bogey|boki|poki|pogi";
+  if (score === par + 2) return "Tuplabogi";
   if (score === par + 3) return "Tripla";
   return `${score} lyöntiä`;
-}
-
-function setScore(h, p, value, correcting = false) {
-  const oldValue = state.scores[h][p];
-  pushHistory(h, p, oldValue, value);
-  state.scores[h][p] = value;
-  save();
-  renderTable();
-
-  const term = scoreTerm(value, pars[h]);
-  announce(
-    `Tallennettu ${value}.`
-  );
 }
 
 function undo() {
@@ -629,7 +629,7 @@ function spokenHoleNumber(text) {
   }
 
   const words = {
-    yksi:1, yksi:1, kaksi:2, kolme:3, nelja:4, viisi:5,
+    yksi:1, kaksi:2, kolme:3, nelja:4, viisi:5,
     kuusi:6, seitseman:7, kahdeksan:8, yhdeksan:9,
     kymmenen:10, yksitoista:11, kaksitoista:12,
     kolmetoista:13, neljatoista:14, viisitoista:15,
@@ -677,6 +677,30 @@ function processCorrection(raw) {
   return true;
 }
 
+
+function targetHoleFromSpeech(text) {
+  const normalized = norm(text);
+
+  const match = normalized.match(/\breika\s+(\d{1,2})\b/);
+  if (match) {
+    const h = Number(match[1]);
+    if (h >= 1 && h <= 18) return h;
+  }
+
+  const words = {
+    yksi:1, kaksi:2, kolme:3, nelja:4, viisi:5,
+    kuusi:6, seitseman:7, kahdeksan:8, yhdeksan:9,
+    kymmenen:10, yksitoista:11, kaksitoista:12,
+    kolmetoista:13, neljatoista:14, viisitoista:15,
+    kuusitoista:16, seitsemantoista:17, kahdeksantoista:18
+  };
+
+  const wordMatch = normalized.match(/\breika\s+([a-z]+)\b/);
+  if (wordMatch && words[wordMatch[1]]) return words[wordMatch[1]];
+
+  return null;
+}
+
 function processSpeech(raw) {
   const normalized = norm(raw);
   if (!normalized) return;
@@ -721,7 +745,8 @@ function processSpeech(raw) {
     return;
   }
 
-  const holeIndex = state.hole - 1;
+  const targetHole = targetHoleFromSpeech(raw) || state.hole;
+  const holeIndex = targetHole - 1;
 
   unique.forEach((score, player) => {
     pushHistory(holeIndex, player, state.scores[holeIndex][player], score);
