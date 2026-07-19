@@ -657,38 +657,70 @@ function spokenHoleNumber(text) {
 
 function processCorrection(raw) {
   const normalized = norm(raw);
-  if (!/\b(korjaa|vaihda|muuta)\b/.test(normalized)) return false;
+  if (!/\b(korjaa|korjaus|vaihda|muuta)\b/.test(normalized)) return false;
 
   const hole = spokenHoleNumber(normalized);
-  const player = playerFrom(raw);
+  if (!hole) {
+    announce("Korjauksesta puuttuu reikä.");
+    return true;
+  }
 
-  // Poistetaan korjauskomento, reikä ja pelaajan nimi ennen tuloksen hakua.
-  // Näin "korjaa reikä 8 petri 6" ei tulkitse reikänumeroa tulokseksi.
-  let scoreText = normalized
-    .replace(/\b(korjaa|vaihda|muuta)\b/g, " ")
+  // Poistetaan korjaussanat, reikä ja numero ennen pelaajien/tulosten käsittelyä.
+  // Näin reiän numero ei päädy vahingossa tulokseksi.
+  let clean = normalized
+    .replace(/\b(korjaa|korjaus|vaihda|muuta)\b/g, " ")
     .replace(/\b(reika|reikä)\s*(\d+|[a-z]+)\b/g, " ");
 
   for (let i = 0; i < state.players; i += 1) {
     const name = norm(state.names[i]);
-    if (name) scoreText = scoreText.replace(name, " ");
+    if (name) clean = clean.replace(name, " ");
   }
 
-  const score = golfScore(scoreText);
+  const tokens = clean.split(" ").filter(Boolean);
+  const scores = extractScoreMentions(clean).mentions.map(m => m.score);
 
-  if (!hole || score === null || player === null) {
-    announce("Korjauksesta puuttuu reikä, pelaaja tai tulos.");
+  const assignments = [];
+
+  // Jos pelaajien nimet löytyvät, käytetään samaa järjestystä kuin normaalissa kirjauksessa.
+  const originalTokens = norm(raw).split(" ").filter(Boolean);
+  const named = playerMentions(originalTokens);
+
+  named.forEach((item, index) => {
+    if (scores[index] !== undefined) {
+      assignments.push({ player: item.player, score: scores[index] });
+    }
+  });
+
+  // Ilman nimiä: annetaan tulokset pelaajajärjestyksessä.
+  if (assignments.length === 0) {
+    scores.slice(0, state.players).forEach((score, player) => {
+      assignments.push({ player, score });
+    });
+  }
+
+  if (assignments.length === 0) {
+    announce("Korjauksesta puuttuu pelaaja tai tulos.");
     return true;
   }
 
   const h = hole - 1;
-  pushHistory(h, player, state.scores[h][player], score);
-  state.scores[h][player] = score;
+
+  assignments.forEach(item => {
+    pushHistory(h, item.player, state.scores[h][item.player], item.score);
+    state.scores[h][item.player] = item.score;
+  });
+
   save();
   render();
 
-  announce(`Korjattu ${state.names[player]}, reikä ${hole}, tulos ${score}.`);
+  const resultText = assignments
+    .map(item => `${state.names[item.player]} ${finnishNumberWord(item.score)}`)
+    .join(", ");
+
+  announce(`Korjattu reikä ${hole}. ${resultText}.`);
   return true;
 }
+
 
 
 function targetHoleFromSpeech(text) {
