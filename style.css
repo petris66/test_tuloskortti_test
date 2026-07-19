@@ -64,3 +64,10 @@ label.toggle{display:flex;align-items:center;justify-content:space-between;gap:1
 #testLogCard{
   display:none!important;
 }
+
+/* Piilotettu ohjetekstit ja testiääni-nappi käyttäjän pyynnöstä -
+   tuloskortti näkyy näin nopeammin. Puhutut vahvistukset toimivat
+   silti "Puhu vahvistukset" -toggle-asetuksen kautta. */
+#status, .examples, #testSpeechButton {
+  display: none !important;
+}

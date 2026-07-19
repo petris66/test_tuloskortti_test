@@ -159,8 +159,21 @@ function renderTable() {
 
   const nextPlayer = nextEmptyPlayer();
 
-  $("#tbody").innerHTML = Array.from({ length: 18 }, (_, h) => {
-    const row = `<tr class="${h + 1 === state.hole ? "current-row" : ""}">
+  // Näytetään vain se yhdeksän jolla parhaillaan pelataan (1-9 tai 10-18),
+  // jotta koko lohko + puhekirjaus mahtuu näytölle ilman jatkuvaa vierittämistä.
+  const nineStart = state.hole <= 9 ? 0 : 9;
+  const nineEnd = nineStart + 9;
+
+  const label = $("#nineLabel");
+  if (label) {
+    label.textContent = nineStart === 0
+      ? "Reiät 1–9 · Etuyhdeksän"
+      : "Reiät 10–18 · Takayhdeksän";
+  }
+
+  $("#tbody").innerHTML = Array.from({ length: nineEnd - nineStart }, (_, i) => {
+    const h = nineStart + i;
+    return `<tr class="${h + 1 === state.hole ? "current-row" : ""}">
       <td><b>${h + 1}</b></td>
       <td>${(coursePars || pars)[h]}</td>
       ${Array.from({ length: state.players }, (_, p) =>
@@ -169,19 +182,6 @@ function renderTable() {
         }" inputmode="numeric" data-h="${h}" data-p="${p}" value="${esc(state.scores[h][p])}"></td>`
       ).join("")}
     </tr>`;
-
-    if (h === 8) {
-      const front = Array.from({ length: state.players }, (_, p) =>
-        state.scores.slice(0, 9).reduce((sum, r) => sum + (Number(r[p]) || 0), 0)
-      );
-
-      return row +
-        `<tr class="nine-total"><td colspan="2">Ulos</td>${
-          front.map(total => `<td>${total}</td>`).join("")
-        }</tr>`;
-    }
-
-    return row;
   }).join("");
 
   const totals = Array.from({ length: state.players }, (_, p) =>
