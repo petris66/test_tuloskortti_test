@@ -9,7 +9,6 @@ let coursePars = null;
 let state = {
   players: 1,
   names: ["Petri", "", "", ""],
-  tees: ["", "", "", ""],
   hole: 1,
   scores: Array.from({ length: 18 }, () => Array(MAX_PLAYERS).fill("")),
   history: [],
@@ -37,9 +36,6 @@ function normalizeState() {
   state.startHole = Number(state.startHole) === 10 ? 10 : 1;
   state.names = Array.from({ length: MAX_PLAYERS }, (_, i) =>
     String(state.names?.[i] || (i === 0 ? "Petri" : ""))
-  );
-  state.tees = Array.from({ length: MAX_PLAYERS }, (_, i) =>
-    String(state.tees?.[i] || "")
   );
   state.scores = Array.from({ length: 18 }, (_, h) =>
     Array.from({ length: MAX_PLAYERS }, (_, p) => state.scores?.[h]?.[p] ?? "")
@@ -141,41 +137,30 @@ function renderSetup() {
 
 function renderNames() {
   $("#nameInputs").innerHTML = Array.from({ length: state.players }, (_, i) =>
-    `<input class="name-setup" data-i="${i}" maxlength="15" value="${esc(state.names[i])}" aria-label="Pelaaja ${i + 1}">
-    <select class="tee-setup name-setup" data-tee="${i}">
-      <option value="">Valitse tii</option>
-      ${["Punainen","Sininen","Keltainen","Valkoinen","Musta"].map(t=>`<option value="${t}" ${state.tees[i]===t?"selected":""}>${t}</option>`).join("")}
-    </select>`
+    `<input class="name-setup" data-i="${i}" maxlength="15" value="${esc(state.names[i])}" aria-label="Pelaaja ${i + 1}">`
   ).join("");
 
   $$(".name-setup").forEach(input => {
     input.onchange = () => {
-      if (input.dataset.i !== undefined) {
-        state.names[Number(input.dataset.i)] = input.value.trim();
-      }
-      if (input.dataset.tee !== undefined) {
-        state.tees[Number(input.dataset.tee)] = input.value;
-      }
-      save();
+      const index = Number(input.dataset.i);
+      state.names[index] = input.value.trim();
       render();
     };
   });
 }
+
 function renderTable() {
-  const visibleStart = state.hole <= 9 ? 0 : 9;
-  const visibleEnd = state.hole <= 9 ? 9 : 18;
-  const visibleHoles = Array.from({length: visibleEnd-visibleStart}, (_,i)=>visibleStart+i);
   $("#thead").innerHTML =
     `<tr><th>Reikä</th><th>Par</th>${
       Array.from({ length: state.players }, (_, i) =>
-        `<th><input class="name" data-name="${i}" value="${esc(state.names[i])}"><br><small>${esc(state.tees[i] || "")}</small></th>`
+        `<th><input class="name" data-name="${i}" value="${esc(state.names[i])}"></th>`
       ).join("")
     }</tr>`;
 
   const nextPlayer = nextEmptyPlayer();
 
-  $("#tbody").innerHTML = visibleHoles.map(h => {
-    const row = `<tr class="${h + 1 === state.hole ? "current-row" : ""}">
+  $("#tbody").innerHTML = Array.from({ length: 18 }, (_, h) =>
+    `<tr class="${h + 1 === state.hole ? "current-row" : ""}">
       <td><b>${h + 1}</b></td>
       <td>${(coursePars || pars)[h]}</td>
       ${Array.from({ length: state.players }, (_, p) =>
@@ -183,21 +168,8 @@ function renderTable() {
           h + 1 === state.hole && p === nextPlayer ? "next-score" : ""
         }" inputmode="numeric" data-h="${h}" data-p="${p}" value="${esc(state.scores[h][p])}"></td>`
       ).join("")}
-    </tr>`;
-
-    if (h === 8) {
-      const front = Array.from({ length: state.players }, (_, p) =>
-        state.scores.slice(0, 9).reduce((sum, r) => sum + (Number(r[p]) || 0), 0)
-      );
-
-      return row +
-        `<tr class="nine-total"><td colspan="2">Ulos</td>${
-          front.map(total => `<td>${total}</td>`).join("")
-        }</tr>`;
-    }
-
-    return row;
-  }).join("");
+    </tr>`
+  ).join("");
 
   const totals = Array.from({ length: state.players }, (_, p) =>
     state.scores.reduce((sum, row) => sum + (Number(row[p]) || 0), 0)
@@ -224,10 +196,10 @@ function renderTable() {
   );
 
   $("#tfoot").innerHTML =
-    `<tr class="nine-total"><td colspan="2">Ulos</td>${
+    `<tr class="nine-total"><td colspan="2">Etu 1-9</td>${
       frontNine.map(total => `<td>${total}</td>`).join("")
     }</tr>
-    <tr class="nine-total"><td colspan="2">Sisään</td>${
+    <tr class="nine-total"><td colspan="2">Taka 10-18</td>${
       backNine.map(total => `<td>${total}</td>`).join("")
     }</tr>
     <tr class="total"><td colspan="2">Yhteensä</td>${
@@ -460,10 +432,6 @@ function initSpeech() {
   }
 }
 
-function speakTextNumberSafe(text) {
-  return text.replace(/(yhteensä|ulos|sisään)\s+(\d+)/gi, "$1 $2");
-}
-
 function speakText(text) {
   if (!state.speak || !("speechSynthesis" in window)) return;
 
@@ -471,7 +439,7 @@ function speakText(text) {
   synth.cancel();
   synth.resume();
 
-  const utterance = new SpeechSynthesisUtterance(String(speakTextNumberSafe(text)).replace(/(\d+)/g, "$1 "));
+  const utterance = new SpeechSynthesisUtterance(text);
   const finnishVoice = voices.find(voice => /^fi([-_]|$)/i.test(voice.lang));
   if (finnishVoice) utterance.voice = finnishVoice;
   utterance.lang = finnishVoice?.lang || "fi-FI";
@@ -572,51 +540,6 @@ function finnishNumberWord(number) {
   return words[number] || String(number);
 }
 
-
-function showRoundFinished() {
-  const box = $("#roundFinishedCard");
-  if (box) box.style.display = "block";
-}
-
-function saveRoundHistory() {
-  const history = {
-    date: new Date().toLocaleDateString("fi-FI"),
-    course: state.course || "Ei kenttää",
-    players: Array.from({ length: state.players }, (_, p) => ({
-      name: state.names[p],
-      front: state.scores.slice(0,9).reduce((sum,row)=>sum+(Number(row[p])||0),0),
-      back: state.scores.slice(9,18).reduce((sum,row)=>sum+(Number(row[p])||0),0),
-      total: state.scores.reduce((sum,row)=>sum+(Number(row[p])||0),0)
-    }))
-  };
-
-  localStorage.setItem("golfVoiceRoundHistory", JSON.stringify(history));
-}
-
-function openRoundHistory() {
-  const history = JSON.parse(localStorage.getItem("golfVoiceRoundHistory") || "null");
-  if (!history) {
-    announce("Ei tallennettua kierroshistoriaa.");
-    return;
-  }
-
-  const box = $("#historyCard");
-  const content = $("#historyContent");
-  if (!box || !content) return;
-
-  const rows = history.players.map(p =>
-    `<p><b>${esc(p.name)}</b><br>Ulos: ${p.front}<br>Sisään: ${p.back}<br>Yhteensä: ${p.total}</p>`
-  ).join("");
-
-  content.innerHTML = `
-    <b>${esc(history.course)}</b><br>
-    ${esc(history.date)}<br><br>
-    ${rows}
-  `;
-
-  box.style.display = "block";
-}
-
 function advanceAfterCompleteHole() {
   const holeIndex = state.hole - 1;
   const complete = state.scores[holeIndex]
@@ -690,23 +613,8 @@ function advanceAfterCompleteHole() {
     return true;
   }
 
-  saveRoundHistory();
   render();
-  showRoundFinished();
-
-  const summaries = Array.from({ length: state.players }, (_, player) => {
-    const front = state.scores.slice(0, 9)
-      .reduce((sum, row) => sum + (Number(row[player]) || 0), 0);
-    const back = state.scores.slice(9, 18)
-      .reduce((sum, row) => sum + (Number(row[player]) || 0), 0);
-    const total = front + back;
-    return `${state.names[player]}: ulos ${front}, sisään ${back}, yhteensä ${total}`;
-  }).join(". ");
-
-  const summaryBox = $("#roundFinishSummary");
-  if (summaryBox) summaryBox.textContent = summaries;
-
-  announce(`Kierros valmis. ${summaries}. Kierroshistoria tallennettu.`);
+  announce("Kierroksen kaikki tulokset on kirjattu. Tarkista tuloskortti.");
 
   return true;
 }
@@ -736,122 +644,37 @@ function spokenHoleNumber(text) {
 
 function processCorrection(raw) {
   const normalized = norm(raw);
-
-  // Reiän poistaminen/tyhjennys
-  if (/\b(poista|pyyhi|nollaa|nolla|tyhjenna)\b/.test(normalized)) {
-    const holeMatch = normalized.match(/\breika\s+(\d{1,2}|[a-z]+)\b/);
-    let hole = null;
-
-    if (holeMatch) {
-      hole = /^\d+$/.test(holeMatch[1]) ? Number(holeMatch[1]) : numbers[holeMatch[1]];
-    }
-
-    if (!hole || hole < 1 || hole > 18) {
-      announce("Poistettavasta reiästä puuttuu numero.");
-      return true;
-    }
-
-    const h = hole - 1;
-    for (let p = 0; p < state.players; p += 1) {
-      pushHistory(h, p, state.scores[h][p], "");
-      state.scores[h][p] = "";
-    }
-
-    save();
-    render();
-    announce(`Reikä ${hole} poistettu kaikilta pelaajilta.`);
-    return true;
-  }
-
   if (!/\b(korjaa|vaihda|muuta)\b/.test(normalized)) return false;
 
-  const holeMatch = normalized.match(/\breika\s+(\d{1,2}|[a-z]+)\b/);
-  let hole = null;
+  const hole = spokenHoleNumber(normalized);
+  const player = playerFrom(raw);
 
-  if (holeMatch) {
-    const value = holeMatch[1];
-    hole = /^\d+$/.test(value) ? Number(value) : numbers[value];
+  // Poistetaan korjauskomento, reikä ja pelaajan nimi ennen tuloksen hakua.
+  // Näin "korjaa reikä 8 petri 6" ei tulkitse reikänumeroa tulokseksi.
+  let scoreText = normalized
+    .replace(/\b(korjaa|vaihda|muuta)\b/g, " ")
+    .replace(/\b(reika|reikä)\s*(\d+|[a-z]+)\b/g, " ");
+
+  for (let i = 0; i < state.players; i += 1) {
+    const name = norm(state.names[i]);
+    if (name) scoreText = scoreText.replace(name, " ");
   }
 
-  if (!hole || hole < 1 || hole > 18) {
-    announce("Korjauksesta puuttuu reikä.");
-    return true;
-  }
+  const score = golfScore(scoreText);
 
-  let tokens = normalized.split(" ").filter(Boolean);
-
-  // Poistetaan reikäkomennon numero ettei sitä tulkita tulokseksi
-  tokens = tokens.filter((token, index) => {
-    if (index === tokens.indexOf("reika") + 1) return false;
-    return true;
-  });
-
-  const mentions = extractScoreMentions(tokens.join(" ")).mentions;
-  const players = playerMentions(tokens);
-
-  const assignments = [];
-  const usedPlayers = new Set();
-
-  mentions.forEach((mention) => {
-    let player = players
-      .filter(p => !usedPlayers.has(p.player) && p.tokenIndex <= mention.tokenIndex)
-      .sort((a,b) => b.tokenIndex - a.tokenIndex)[0]?.player;
-
-    if (player === undefined) {
-      player = Array.from({length: state.players}, (_, i) => i)
-        .find(i => !usedPlayers.has(i));
-    }
-
-    if (player !== undefined && mention.score >= 1 && mention.score <= 20) {
-      usedPlayers.add(player);
-      assignments.push({player, score: mention.score});
-    }
-  });
-
-  if (!assignments.length) {
-    announce("Korjauksesta puuttuu pelaaja tai tulos.");
+  if (!hole || score === null || player === null) {
+    announce("Korjauksesta puuttuu reikä, pelaaja tai tulos.");
     return true;
   }
 
   const h = hole - 1;
-
-  assignments.forEach(item => {
-    pushHistory(h, item.player, state.scores[h][item.player], item.score);
-    state.scores[h][item.player] = item.score;
-  });
-
+  pushHistory(h, player, state.scores[h][player], score);
+  state.scores[h][player] = score;
   save();
   render();
 
-  const resultText = assignments
-    .map(item => `${state.names[item.player]} ${finnishNumberWord(item.score)}`)
-    .join(", ");
-
-  announce(`Korjattu reikä ${hole}. ${resultText}.`);
+  announce(`Korjattu ${state.names[player]}, reikä ${hole}, tulos ${score}.`);
   return true;
-}
-
-function targetHoleFromSpeech(text) {
-  const normalized = norm(text);
-
-  const match = normalized.match(/\breika\s+(\d{1,2})\b/);
-  if (match) {
-    const h = Number(match[1]);
-    if (h >= 1 && h <= 18) return h;
-  }
-
-  const words = {
-    yksi:1, yksi:1, kaksi:2, kolme:3, nelja:4, viisi:5,
-    kuusi:6, seitseman:7, kahdeksan:8, yhdeksan:9,
-    kymmenen:10, yksitoista:11, kaksitoista:12,
-    kolmetoista:13, neljatoista:14, viisitoista:15,
-    kuusitoista:16, seitsemantoista:17, kahdeksantoista:18
-  };
-
-  const wordMatch = normalized.match(/\breika\s+([a-z]+)\b/);
-  if (wordMatch && words[wordMatch[1]]) return words[wordMatch[1]];
-
-  return null;
 }
 
 function processSpeech(raw) {
@@ -898,8 +721,7 @@ function processSpeech(raw) {
     return;
   }
 
-  const targetHole = targetHoleFromSpeech(raw) || state.hole;
-  const holeIndex = targetHole - 1;
+  const holeIndex = state.hole - 1;
 
   unique.forEach((score, player) => {
     pushHistory(holeIndex, player, state.scores[holeIndex][player], score);
@@ -998,67 +820,6 @@ $(".par-select").onclick = event => {
 };
 
 $("#voiceButton").onclick = startVoice;
-$("#roundHistoryButton")?.addEventListener("click", openRoundHistory);
-
-function createShareScorecardHTML() {
-  const rows = state.scores.map((row, h) => {
-    if (h === 9) {
-      return `<tr class="section"><td colspan="${state.players+2}">Takaysi</td></tr>`;
-    }
-    return `<tr><td>${h+1}</td><td>${(coursePars || pars)[h]}</td>${
-      Array.from({length: state.players}, (_,p)=>`<td>${row[p] || ""}</td>`).join("")
-    }</tr>`;
-  }).join("");
-
-  const summary = Array.from({length: state.players}, (_,p)=>{
-    const front=state.scores.slice(0,9).reduce((s,r)=>s+(Number(r[p])||0),0);
-    const back=state.scores.slice(9).reduce((s,r)=>s+(Number(r[p])||0),0);
-    return `<tr><td>${esc(state.names[p])}</td><td>${esc(state.tees[p]||"")}</td><td>${front}</td><td>${back}</td><td>${front+back}</td></tr>`;
-  }).join("");
-
-  return `
-  <div style="font-family:Arial;color:#173019;background:#fbfcf7;padding:20px">
-    <h1 style="color:#173f18">Golf Voice Scorecard AI</h1>
-    <h2>${esc(state.course || "Kenttä nimeämättä")}</h2>
-    <p>${new Date().toLocaleDateString("fi-FI")}</p>
-    <h3>Kierroksen yhteenveto</h3>
-    <table border="1" cellspacing="0" cellpadding="6">
-      <tr><th>Pelaaja</th><th>Tii</th><th>Etu</th><th>Taka</th><th>Yht.</th></tr>
-      ${summary}
-    </table>
-    <h3>Tuloskortti</h3>
-    <table border="1" cellspacing="0" cellpadding="6">
-      <tr><th>Reikä</th><th>Par</th>${Array.from({length:state.players},(_,p)=>`<th>${esc(state.names[p])}</th>`).join("")}</tr>
-      ${rows}
-    </table>
-  </div>`;
-}
-
-
-function createShareScorecardHTML() {
-  const rows = state.scores.map((row,h)=>{
-    if(h===9) return `<tr><td colspan="${state.players+2}"><b>Takaysi</b></td></tr>`;
-    return `<tr><td>${h+1}</td><td>${(coursePars||pars)[h]}</td>${Array.from({length:state.players},(_,p)=>`<td>${row[p]||""}</td>`).join("")}</tr>`;
-  }).join("");
-  const summary=Array.from({length:state.players},(_,p)=>{
-    const front=state.scores.slice(0,9).reduce((s,r)=>s+(Number(r[p])||0),0);
-    const back=state.scores.slice(9).reduce((s,r)=>s+(Number(r[p])||0),0);
-    return `<tr><td>${esc(state.names[p])}</td><td>${esc(state.tees[p]||"")}</td><td>${front}</td><td>${back}</td><td>${front+back}</td></tr>`;
-  }).join("");
-  return `<h1>Golf Voice Scorecard AI</h1><h2>${esc(state.course||"Kenttä nimeämättä")}</h2><p>${new Date().toLocaleDateString("fi-FI")}</p><h3>Kierroksen yhteenveto</h3><table border="1"><tr><th>Pelaaja</th><th>Tii</th><th>Etu</th><th>Taka</th><th>Yht.</th></tr>${summary}</table><h3>Tuloskortti</h3><table border="1"><tr><th>Reikä</th><th>Par</th>${Array.from({length:state.players},(_,p)=>`<th>${esc(state.names[p])}</th>`).join("")}</tr>${rows}</table>`;
-}
-
-$("#shareScoreButton")?.addEventListener("click", async () => {
-  const html = createShareScorecardHTML();
-  if (navigator.share) {
-    try {
-      await navigator.share({title:"Golf tuloskortti", text: html.replace(/<[^>]+>/g,"")});
-    } catch(e) {}
-  } else {
-    navigator.clipboard?.writeText(html);
-    announce("Tuloskortti luotu.");
-  }
-});
 function selectCourse(courseId) {
   const c = courses.find(x => x.id === courseId);
   if (!c) return;
