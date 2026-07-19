@@ -445,6 +445,10 @@ function initSpeech() {
   }
 }
 
+function speakTextNumberSafe(text) {
+  return text.replace(/(yhteensä|ulos|sisään)\s+(\d+)/gi, "$1 $2");
+}
+
 function speakText(text) {
   if (!state.speak || !("speechSynthesis" in window)) return;
 
@@ -452,7 +456,7 @@ function speakText(text) {
   synth.cancel();
   synth.resume();
 
-  const utterance = new SpeechSynthesisUtterance(text);
+  const utterance = new SpeechSynthesisUtterance(String(speakTextNumberSafe(text)).replace(/(\d+)/g, "$1 "));
   const finnishVoice = voices.find(voice => /^fi([-_]|$)/i.test(voice.lang));
   if (finnishVoice) utterance.voice = finnishVoice;
   utterance.lang = finnishVoice?.lang || "fi-FI";
@@ -553,6 +557,51 @@ function finnishNumberWord(number) {
   return words[number] || String(number);
 }
 
+
+function showRoundFinished() {
+  const box = $("#roundFinishedCard");
+  if (box) box.style.display = "block";
+}
+
+function saveRoundHistory() {
+  const history = {
+    date: new Date().toLocaleDateString("fi-FI"),
+    course: state.course || "Ei kenttää",
+    players: Array.from({ length: state.players }, (_, p) => ({
+      name: state.names[p],
+      front: state.scores.slice(0,9).reduce((sum,row)=>sum+(Number(row[p])||0),0),
+      back: state.scores.slice(9,18).reduce((sum,row)=>sum+(Number(row[p])||0),0),
+      total: state.scores.reduce((sum,row)=>sum+(Number(row[p])||0),0)
+    }))
+  };
+
+  localStorage.setItem("golfVoiceRoundHistory", JSON.stringify(history));
+}
+
+function openRoundHistory() {
+  const history = JSON.parse(localStorage.getItem("golfVoiceRoundHistory") || "null");
+  if (!history) {
+    announce("Ei tallennettua kierroshistoriaa.");
+    return;
+  }
+
+  const box = $("#historyCard");
+  const content = $("#historyContent");
+  if (!box || !content) return;
+
+  const rows = history.players.map(p =>
+    `<p><b>${esc(p.name)}</b><br>Ulos: ${p.front}<br>Sisään: ${p.back}<br>Yhteensä: ${p.total}</p>`
+  ).join("");
+
+  content.innerHTML = `
+    <b>${esc(history.course)}</b><br>
+    ${esc(history.date)}<br><br>
+    ${rows}
+  `;
+
+  box.style.display = "block";
+}
+
 function advanceAfterCompleteHole() {
   const holeIndex = state.hole - 1;
   const complete = state.scores[holeIndex]
@@ -626,8 +675,23 @@ function advanceAfterCompleteHole() {
     return true;
   }
 
+  saveRoundHistory();
   render();
-  announce("Kierroksen kaikki tulokset on kirjattu. Tarkista tuloskortti.");
+  showRoundFinished();
+
+  const summaries = Array.from({ length: state.players }, (_, player) => {
+    const front = state.scores.slice(0, 9)
+      .reduce((sum, row) => sum + (Number(row[player]) || 0), 0);
+    const back = state.scores.slice(9, 18)
+      .reduce((sum, row) => sum + (Number(row[player]) || 0), 0);
+    const total = front + back;
+    return `${state.names[player]}: ulos ${front}, sisään ${back}, yhteensä ${total}`;
+  }).join(". ");
+
+  const summaryBox = $("#roundFinishSummary");
+  if (summaryBox) summaryBox.textContent = summaries;
+
+  announce(`Kierros valmis. ${summaries}. Kierroshistoria tallennettu.`);
 
   return true;
 }
@@ -657,58 +721,84 @@ function spokenHoleNumber(text) {
 
 function processCorrection(raw) {
   const normalized = norm(raw);
-  if (!/\b(korjaa|korjaus|vaihda|muuta)\b/.test(normalized)) return false;
 
-  const hole = spokenHoleNumber(normalized);
-  if (!hole) {
-    announce("Korjauksesta puuttuu reikä, pelaaja tai tulos.");
+  // Reiän poistaminen/tyhjennys
+  if (/\b(poista|pyyhi|nollaa|nolla|tyhjenna)\b/.test(normalized)) {
+    const holeMatch = normalized.match(/\breika\s+(\d{1,2}|[a-z]+)\b/);
+    let hole = null;
+
+    if (holeMatch) {
+      hole = /^\d+$/.test(holeMatch[1]) ? Number(holeMatch[1]) : numbers[holeMatch[1]];
+    }
+
+    if (!hole || hole < 1 || hole > 18) {
+      announce("Poistettavasta reiästä puuttuu numero.");
+      return true;
+    }
+
+    const h = hole - 1;
+    for (let p = 0; p < state.players; p += 1) {
+      pushHistory(h, p, state.scores[h][p], "");
+      state.scores[h][p] = "";
+    }
+
+    save();
+    render();
+    announce(`Reikä ${hole} poistettu kaikilta pelaajilta.`);
     return true;
   }
 
-  const h = hole - 1;
+  if (!/\b(korjaa|vaihda|muuta)\b/.test(normalized)) return false;
 
-  let scoreText = normalized
-    .replace(/\b(korjaa|korjaus|vaihda|muuta)\b/g, " ")
-    .replace(/\breika\s*(\d+|[a-z]+)\b/g, " ");
+  const holeMatch = normalized.match(/\breika\s+(\d{1,2}|[a-z]+)\b/);
+  let hole = null;
 
-  const tokens = scoreText.split(" ").filter(Boolean);
-  const namedPlayers = playerMentions(tokens);
+  if (holeMatch) {
+    const value = holeMatch[1];
+    hole = /^\d+$/.test(value) ? Number(value) : numbers[value];
+  }
 
-  const scores = extractScoreMentions(scoreText).mentions;
-
-  if (!scores.length) {
-    announce("Korjauksesta puuttuu reikä, pelaaja tai tulos.");
+  if (!hole || hole < 1 || hole > 18) {
+    announce("Korjauksesta puuttuu reikä.");
     return true;
   }
+
+  let tokens = normalized.split(" ").filter(Boolean);
+
+  // Poistetaan reikäkomennon numero ettei sitä tulkita tulokseksi
+  tokens = tokens.filter((token, index) => {
+    if (index === tokens.indexOf("reika") + 1) return false;
+    return true;
+  });
+
+  const mentions = extractScoreMentions(tokens.join(" ")).mentions;
+  const players = playerMentions(tokens);
 
   const assignments = [];
   const usedPlayers = new Set();
 
-  scores.forEach((item, index) => {
-    let player = null;
+  mentions.forEach((mention) => {
+    let player = players
+      .filter(p => !usedPlayers.has(p.player) && p.tokenIndex <= mention.tokenIndex)
+      .sort((a,b) => b.tokenIndex - a.tokenIndex)[0]?.player;
 
-    const before = namedPlayers
-      .filter(p => p.tokenIndex <= item.tokenIndex && !usedPlayers.has(p.player))
-      .sort((a, b) => b.tokenIndex - a.tokenIndex)[0];
-
-    if (before) {
-      player = before.player;
-    } else {
-      const free = Array.from({ length: state.players }, (_, i) => i)
+    if (player === undefined) {
+      player = Array.from({length: state.players}, (_, i) => i)
         .find(i => !usedPlayers.has(i));
-      player = free ?? null;
     }
 
-    if (player !== null) {
+    if (player !== undefined && mention.score >= 1 && mention.score <= 20) {
       usedPlayers.add(player);
-      assignments.push({ player, score: item.score });
+      assignments.push({player, score: mention.score});
     }
   });
 
   if (!assignments.length) {
-    announce("Korjauksesta puuttuu reikä, pelaaja tai tulos.");
+    announce("Korjauksesta puuttuu pelaaja tai tulos.");
     return true;
   }
+
+  const h = hole - 1;
 
   assignments.forEach(item => {
     pushHistory(h, item.player, state.scores[h][item.player], item.score);
@@ -893,6 +983,38 @@ $(".par-select").onclick = event => {
 };
 
 $("#voiceButton").onclick = startVoice;
+$("#roundHistoryButton")?.addEventListener("click", openRoundHistory);
+$("#shareScoreButton")?.addEventListener("click", async () => {
+  const history = JSON.parse(localStorage.getItem("golfVoiceRoundHistory") || "null");
+
+  if (!history) {
+    announce("Ei tallennettua kierrosta jaettavaksi.");
+    return;
+  }
+
+  const text = [
+    history.course,
+    history.date,
+    "",
+    ...history.players.map(p =>
+      `${p.name}\nUlos: ${p.front}\nSisään: ${p.back}\nYhteensä: ${p.total}`
+    )
+  ].join("\n");
+
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: "Golf tuloskortti",
+        text
+      });
+    } catch (e) {
+      // käyttäjä perui jaon
+    }
+  } else {
+    navigator.clipboard?.writeText(text);
+    announce("Tuloskortti kopioitu leikepöydälle.");
+  }
+});
 function selectCourse(courseId) {
   const c = courses.find(x => x.id === courseId);
   if (!c) return;
