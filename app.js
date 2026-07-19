@@ -20,7 +20,7 @@ let state = {
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 let courses = [];
-async function loadCourses(){try{courses=await fetch("data/courses.json").then(r=>r.json());const s=$("#courseSelect");if(!s)return; s.innerHTML='<option value="">Valitse kenttä</option>'+courses.map(c=>`<option value="${c.id}">${c.name}</option>`).join(""); if(state.course){s.value=state.course; const c=courses.find(x=>x.id===state.course); if(c) coursePars=[...c.pars];}}catch(e){ console.error("Kenttien lataus epäonnistui:", e); const s=$("#courseSelect"); if(s) s.innerHTML='<option value="">Kenttiä ei saatu ladattua</option>'; }}
+async function loadCourses(){try{courses=await fetch("data/courses.json").then(r=>r.json());const s=$("#courseSelect");if(!s)return; s.innerHTML='<option value="">Valitse kenttä</option>'+courses.map(c=>`<option value="${c.id}">${c.name}</option>`).join(""); if(state.course){s.value=state.course; const c=courses.find(x=>x.id===state.course); if(c) coursePars=[...c.pars];}}catch(e){ console.error("Kenttien lataus epäonnistui:", e); }}
 
 
 function esc(value) {
@@ -159,21 +159,8 @@ function renderTable() {
 
   const nextPlayer = nextEmptyPlayer();
 
-  // Näytetään vain se yhdeksän jolla parhaillaan pelataan (1-9 tai 10-18),
-  // jotta koko lohko + puhekirjaus mahtuu näytölle ilman jatkuvaa vierittämistä.
-  const nineStart = state.hole <= 9 ? 0 : 9;
-  const nineEnd = nineStart + 9;
-
-  const label = $("#nineLabel");
-  if (label) {
-    label.textContent = nineStart === 0
-      ? "Reiät 1–9 · Etuyhdeksän"
-      : "Reiät 10–18 · Takayhdeksän";
-  }
-
-  $("#tbody").innerHTML = Array.from({ length: nineEnd - nineStart }, (_, i) => {
-    const h = nineStart + i;
-    return `<tr class="${h + 1 === state.hole ? "current-row" : ""}">
+  $("#tbody").innerHTML = Array.from({ length: 18 }, (_, h) => {
+    const row = `<tr class="${h + 1 === state.hole ? "current-row" : ""}">
       <td><b>${h + 1}</b></td>
       <td>${(coursePars || pars)[h]}</td>
       ${Array.from({ length: state.players }, (_, p) =>
@@ -182,6 +169,19 @@ function renderTable() {
         }" inputmode="numeric" data-h="${h}" data-p="${p}" value="${esc(state.scores[h][p])}"></td>`
       ).join("")}
     </tr>`;
+
+    if (h === 8) {
+      const front = Array.from({ length: state.players }, (_, p) =>
+        state.scores.slice(0, 9).reduce((sum, r) => sum + (Number(r[p]) || 0), 0)
+      );
+
+      return row +
+        `<tr class="nine-total"><td colspan="2">Ulos</td>${
+          front.map(total => `<td>${total}</td>`).join("")
+        }</tr>`;
+    }
+
+    return row;
   }).join("");
 
   const totals = Array.from({ length: state.players }, (_, p) =>
@@ -491,9 +491,22 @@ function scoreTerm(score, par = activePar()) {
   if (score === par - 1) return "Birdie";
   if (score === par) return "Par";
   if (score === par + 1) return "Bogi";
-  if (score === par + 2) return "Tuplabogi";
+  if (score === par + 2) return "Tuplabogi|bogey|boki|poki|pogi";
   if (score === par + 3) return "Tripla";
   return `${score} lyöntiä`;
+}
+
+function setScore(h, p, value, correcting = false) {
+  const oldValue = state.scores[h][p];
+  pushHistory(h, p, oldValue, value);
+  state.scores[h][p] = value;
+  save();
+  renderTable();
+
+  const term = scoreTerm(value, pars[h]);
+  announce(
+    `Tallennettu ${value}.`
+  );
 }
 
 function undo() {
@@ -629,7 +642,7 @@ function spokenHoleNumber(text) {
   }
 
   const words = {
-    yksi:1, kaksi:2, kolme:3, nelja:4, viisi:5,
+    yksi:1, yksi:1, kaksi:2, kolme:3, nelja:4, viisi:5,
     kuusi:6, seitseman:7, kahdeksan:8, yhdeksan:9,
     kymmenen:10, yksitoista:11, kaksitoista:12,
     kolmetoista:13, neljatoista:14, viisitoista:15,
@@ -688,7 +701,7 @@ function targetHoleFromSpeech(text) {
   }
 
   const words = {
-    yksi:1, kaksi:2, kolme:3, nelja:4, viisi:5,
+    yksi:1, yksi:1, kaksi:2, kolme:3, nelja:4, viisi:5,
     kuusi:6, seitseman:7, kahdeksan:8, yhdeksan:9,
     kymmenen:10, yksitoista:11, kaksitoista:12,
     kolmetoista:13, neljatoista:14, viisitoista:15,
