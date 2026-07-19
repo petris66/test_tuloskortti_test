@@ -661,49 +661,54 @@ function processCorrection(raw) {
 
   const hole = spokenHoleNumber(normalized);
   if (!hole) {
-    announce("Korjauksesta puuttuu reikä.");
-    return true;
-  }
-
-  // Poistetaan korjaussanat, reikä ja numero ennen pelaajien/tulosten käsittelyä.
-  // Näin reiän numero ei päädy vahingossa tulokseksi.
-  let clean = normalized
-    .replace(/\b(korjaa|korjaus|vaihda|muuta)\b/g, " ")
-    .replace(/\b(reika|reikä)\s*(\d+|[a-z]+)\b/g, " ");
-
-  for (let i = 0; i < state.players; i += 1) {
-    const name = norm(state.names[i]);
-    if (name) clean = clean.replace(name, " ");
-  }
-
-  const tokens = clean.split(" ").filter(Boolean);
-  const scores = extractScoreMentions(clean).mentions.map(m => m.score);
-
-  const assignments = [];
-
-  // Jos pelaajien nimet löytyvät, käytetään samaa järjestystä kuin normaalissa kirjauksessa.
-  const originalTokens = norm(raw).split(" ").filter(Boolean);
-  const named = playerMentions(originalTokens);
-
-  named.forEach((item, index) => {
-    if (scores[index] !== undefined) {
-      assignments.push({ player: item.player, score: scores[index] });
-    }
-  });
-
-  // Ilman nimiä: annetaan tulokset pelaajajärjestyksessä.
-  if (assignments.length === 0) {
-    scores.slice(0, state.players).forEach((score, player) => {
-      assignments.push({ player, score });
-    });
-  }
-
-  if (assignments.length === 0) {
-    announce("Korjauksesta puuttuu pelaaja tai tulos.");
+    announce("Korjauksesta puuttuu reikä, pelaaja tai tulos.");
     return true;
   }
 
   const h = hole - 1;
+
+  let scoreText = normalized
+    .replace(/\b(korjaa|korjaus|vaihda|muuta)\b/g, " ")
+    .replace(/\breika\s*(\d+|[a-z]+)\b/g, " ");
+
+  const tokens = scoreText.split(" ").filter(Boolean);
+  const namedPlayers = playerMentions(tokens);
+
+  const scores = extractScoreMentions(scoreText).mentions;
+
+  if (!scores.length) {
+    announce("Korjauksesta puuttuu reikä, pelaaja tai tulos.");
+    return true;
+  }
+
+  const assignments = [];
+  const usedPlayers = new Set();
+
+  scores.forEach((item, index) => {
+    let player = null;
+
+    const before = namedPlayers
+      .filter(p => p.tokenIndex <= item.tokenIndex && !usedPlayers.has(p.player))
+      .sort((a, b) => b.tokenIndex - a.tokenIndex)[0];
+
+    if (before) {
+      player = before.player;
+    } else {
+      const free = Array.from({ length: state.players }, (_, i) => i)
+        .find(i => !usedPlayers.has(i));
+      player = free ?? null;
+    }
+
+    if (player !== null) {
+      usedPlayers.add(player);
+      assignments.push({ player, score: item.score });
+    }
+  });
+
+  if (!assignments.length) {
+    announce("Korjauksesta puuttuu reikä, pelaaja tai tulos.");
+    return true;
+  }
 
   assignments.forEach(item => {
     pushHistory(h, item.player, state.scores[h][item.player], item.score);
@@ -720,8 +725,6 @@ function processCorrection(raw) {
   announce(`Korjattu reikä ${hole}. ${resultText}.`);
   return true;
 }
-
-
 
 function targetHoleFromSpeech(text) {
   const normalized = norm(text);
