@@ -916,3 +916,32 @@ $("#resetButton").onclick = () => {
   render();
   announce(`Uusi testikierros aloitettu reiältä ${state.startHole}.`);
 };
+
+function createShareScorecardHTML() {
+  const courseName = state.course ? (courses.find(c=>c.id===state.course)?.name || state.course) : "Golf kierros";
+  const parValues = coursePars || pars;
+  const players = Array.from({length: state.players}, (_,p)=>{
+    const rows=[...state.scores.slice(0,9),...state.scores.slice(9,18)];
+    const total=rows.reduce((s,r)=>s+(Number(r[p])||0),0);
+    return `<div class="player">
+<h2>${esc(state.names[p]||"Pelaaja")}</h2>
+<table>
+<tr><th>Reikä</th>${Array.from({length:18},(_,i)=>`<th>${i+1}</th>`).join("")}<th>Yht</th></tr>
+<tr><td>Par</td>${parValues.map(v=>`<td>${v}</td>`).join("")}<td>${parValues.reduce((a,b)=>a+b,0)}</td></tr>
+<tr><td>Tulos</td>${rows.map(r=>`<td>${r[p]||"-"}</td>`).join("")}<td>${total}</td></tr>
+</table></div>`;
+  }).join("");
+  return `<!doctype html><html lang="fi"><meta name="viewport" content="width=device-width,initial-scale=1"><style>
+body{font-family:-apple-system;background:#173f18;padding:12px}.card,.player{background:#fff;border-radius:18px;padding:16px;margin:12px 0}table{width:100%;border-collapse:collapse;font-size:12px}td,th{border:1px solid #ddd;text-align:center;padding:4px}h1{color:#fff;text-align:center}
+</style><h1>🏌️ Golf Voice Scorecard AI</h1><div class="card"><b>Kenttä:</b> ${esc(courseName)}</div>${players}</html>`;
+}
+async function shareScorecard(){
+ const blob=new Blob([createShareScorecardHTML()],{type:"text/html"});
+ const file=new File([blob],"golf-scorecard.html",{type:"text/html"});
+ if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
+   await navigator.share({title:"Golf tuloskortti",files:[file]});
+ } else {
+   window.open(URL.createObjectURL(blob),"_blank");
+ }
+}
+$("#shareScoreButton")?.addEventListener("click", shareScorecard);
