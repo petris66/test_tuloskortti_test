@@ -14,88 +14,22 @@
 </head>
 <body>
 <main class="app">
-<header class="hero">
-<div class="badge">TEST BUILD 02 · v0.2.4</div>
-<h1>Golf Voice <strong>Scorecard AI</strong></h1>
-<div class="subtitle">Luonnollinen puhe · golftermit · korjaukset · undo</div>
-</header>
-
-<section class="card">
-<h2 class="title">KENTTÄ</h2>
-<select id="courseSelect" class="name-setup"><option value="">Valitse kenttä</option></select>
-<div id="courseInfo"></div>
-</section>
-<section class="card">
-<h2 class="title">KIERROKSEN ASETUKSET</h2>
-<div class="grid players" id="playerButtons"></div>
-<p style="margin-bottom:6px"><b>Aloitusreikä</b></p>
-<div class="grid players" id="startHoleButtons"></div>
-<p style="margin-bottom:6px"><b>Pelaajien nimet</b></p>
-<div class="grid" id="nameInputs"></div>
-</section>
-
-<section class="card">
-<div class="hole-head">
-<div><h2 class="title">NYKYINEN REIKÄ</h2><div class="par-select"><span><b>Par:</b></span><button class="btn" data-par="3">3</button><button class="btn active" data-par="4">4</button><button class="btn" data-par="5">5</button></div></div>
-<div class="hole-number" id="holeNumber">1</div>
-</div>
-</section>
 
 <section class="card">
 <h2 class="title">PUHEKIRJAUS</h2>
 <button class="btn primary" id="voiceButton">🎤 Anna tulos puheella</button>
 
 <div class="status" id="status">Paina mikrofonia ja sano esimerkiksi <b>“birdie”</b>, <b>“Petri par”</b> tai <b>“korjaa neloseksi”</b>.</div>
-<div class="examples">Toimivia ilmauksia: “par”, “birdie”, “bogi”, “Petri par”, “Petri par, Kimmo bogi”, “par ja bogi”, “peru” sekä “korjaa Petrille neljä”.</div>
-<div class="grid quick">
-<button class="btn quick-score" data-speech="birdie">Birdie</button>
-<button class="btn quick-score" data-speech="par">Par</button>
-<button class="btn quick-score" data-speech="bogi">Bogi</button>
-<button class="btn quick-score" data-speech="tupla">Tupla</button>
-<button class="btn quick-score" data-speech="peru">Peru</button>
-</div>
-<button class="btn voice-test" id="testSpeechButton">🔊 Testaa puheääni</button>
-<label class="toggle"><span>🔊 Puhu vahvistukset</span><input id="speakToggle" type="checkbox" checked></label>
+
+<div class="examples hidden">Toimivat ilmaukset piilotettu normaalista kierrosnäkymästä.</div>
+<div class="grid quick hidden"></div>
+<button class="btn voice-test hidden" id="testSpeechButton">🔊 Testaa puheääni</button>
+<label class="toggle hidden">
+<span>🔊 Puhu vahvistukset</span><input id="speakToggle" type="checkbox" checked>
+</label>
 </section>
 
-<section class="card">
-<h2 class="title">TULOSKORTTI</h2>
-<div class="table-wrap"><table><thead id="thead"></thead><tbody id="tbody"></tbody><tfoot id="tfoot"></tfoot></table></div>
-</section>
-
-<section class="card">
-<h2 class="title">TOIMINNOT</h2>
-<div class="grid actions">
-<button class="btn" id="prevHole">← Edellinen reikä</button>
-<button class="btn" id="nextHole">Seuraava reikä →</button>
-<button class="btn" id="undoButton">↶ Peru viimeisin kirjaus</button>
-<button class="btn danger" id="resetButton">Aloita uusi testikierros</button>
-</div>
-</section>
-
-
-
-<section class="card" id="historyCard" style="display:none;">
-<h2 class="title">KIERROSHISTORIA</h2>
-<div id="historyContent" class="status"></div>
-<button class="btn primary" id="shareScoreButton">📤 Jaa tuloskortti</button>
-</section>
-
-<section class="card" id="testLogCard">
-<h2 class="title">TESTILOKI</h2>
-<div class="test-note">Tämä on erillinen Test Build‑02. Se ei käytä OpenAI API:a: golftermien tulkinta tapahtuu selaimessa nopeasti ja ilman API-kuluja. Puheentunnistus tarvitsee selaimen tuen ja yleensä HTTPS-yhteyden.</div>
-<ol class="log" id="log"></ol>
-</section>
-<section class="card" id="roundFinishedCard" style="display:none;">
-<h2 class="title">KIERROS VALMIS</h2>
-<p id="roundFinishSummary">Kierros on päättynyt.</p>
-<button class="btn primary" id="roundHistoryButton">📋 Kierroshistoria</button>
-</section>
-
-
-
-
-<div class="version-note">Golf Voice Scorecard AI · v0.2.7</div>
 </main>
 <script src="app.js?v=0.2.7"></script>
-</body></html>
+</body>
+</html>
