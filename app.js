@@ -9,6 +9,7 @@ let coursePars = null;
 let state = {
   players: 1,
   names: ["Petri", "", "", ""],
+  tees: ["", "", "", ""],
   hole: 1,
   scores: Array.from({ length: 18 }, () => Array(MAX_PLAYERS).fill("")),
   history: [],
@@ -36,6 +37,9 @@ function normalizeState() {
   state.startHole = Number(state.startHole) === 10 ? 10 : 1;
   state.names = Array.from({ length: MAX_PLAYERS }, (_, i) =>
     String(state.names?.[i] || (i === 0 ? "Petri" : ""))
+  );
+  state.tees = Array.from({ length: MAX_PLAYERS }, (_, i) =>
+    String(state.tees?.[i] || "")
   );
   state.scores = Array.from({ length: 18 }, (_, h) =>
     Array.from({ length: MAX_PLAYERS }, (_, p) => state.scores?.[h]?.[p] ?? "")
@@ -137,29 +141,40 @@ function renderSetup() {
 
 function renderNames() {
   $("#nameInputs").innerHTML = Array.from({ length: state.players }, (_, i) =>
-    `<input class="name-setup" data-i="${i}" maxlength="15" value="${esc(state.names[i])}" aria-label="Pelaaja ${i + 1}">`
+    `<input class="name-setup" data-i="${i}" maxlength="15" value="${esc(state.names[i])}" aria-label="Pelaaja ${i + 1}">
+    <select class="tee-setup name-setup" data-tee="${i}">
+      <option value="">Valitse tii</option>
+      ${["Punainen","Sininen","Keltainen","Valkoinen","Musta"].map(t=>`<option value="${t}" ${state.tees[i]===t?"selected":""}>${t}</option>`).join("")}
+    </select>`
   ).join("");
 
   $$(".name-setup").forEach(input => {
     input.onchange = () => {
-      const index = Number(input.dataset.i);
-      state.names[index] = input.value.trim();
+      if (input.dataset.i !== undefined) {
+        state.names[Number(input.dataset.i)] = input.value.trim();
+      }
+      if (input.dataset.tee !== undefined) {
+        state.tees[Number(input.dataset.tee)] = input.value;
+      }
+      save();
       render();
     };
   });
 }
-
 function renderTable() {
+  const visibleStart = state.hole <= 9 ? 0 : 9;
+  const visibleEnd = state.hole <= 9 ? 9 : 18;
+  const visibleHoles = Array.from({length: visibleEnd-visibleStart}, (_,i)=>visibleStart+i);
   $("#thead").innerHTML =
     `<tr><th>Reikä</th><th>Par</th>${
       Array.from({ length: state.players }, (_, i) =>
-        `<th><input class="name" data-name="${i}" value="${esc(state.names[i])}"></th>`
+        `<th><input class="name" data-name="${i}" value="${esc(state.names[i])}"><br><small>${esc(state.tees[i] || "")}</small></th>`
       ).join("")
     }</tr>`;
 
   const nextPlayer = nextEmptyPlayer();
 
-  $("#tbody").innerHTML = Array.from({ length: 18 }, (_, h) => {
+  $("#tbody").innerHTML = visibleHoles.map(h => {
     const row = `<tr class="${h + 1 === state.hole ? "current-row" : ""}">
       <td><b>${h + 1}</b></td>
       <td>${(coursePars || pars)[h]}</td>
@@ -984,35 +999,64 @@ $(".par-select").onclick = event => {
 
 $("#voiceButton").onclick = startVoice;
 $("#roundHistoryButton")?.addEventListener("click", openRoundHistory);
+
+function createShareScorecardHTML() {
+  const rows = state.scores.map((row, h) => {
+    if (h === 9) {
+      return `<tr class="section"><td colspan="${state.players+2}">Takaysi</td></tr>`;
+    }
+    return `<tr><td>${h+1}</td><td>${(coursePars || pars)[h]}</td>${
+      Array.from({length: state.players}, (_,p)=>`<td>${row[p] || ""}</td>`).join("")
+    }</tr>`;
+  }).join("");
+
+  const summary = Array.from({length: state.players}, (_,p)=>{
+    const front=state.scores.slice(0,9).reduce((s,r)=>s+(Number(r[p])||0),0);
+    const back=state.scores.slice(9).reduce((s,r)=>s+(Number(r[p])||0),0);
+    return `<tr><td>${esc(state.names[p])}</td><td>${esc(state.tees[p]||"")}</td><td>${front}</td><td>${back}</td><td>${front+back}</td></tr>`;
+  }).join("");
+
+  return `
+  <div style="font-family:Arial;color:#173019;background:#fbfcf7;padding:20px">
+    <h1 style="color:#173f18">Golf Voice Scorecard AI</h1>
+    <h2>${esc(state.course || "Kenttä nimeämättä")}</h2>
+    <p>${new Date().toLocaleDateString("fi-FI")}</p>
+    <h3>Kierroksen yhteenveto</h3>
+    <table border="1" cellspacing="0" cellpadding="6">
+      <tr><th>Pelaaja</th><th>Tii</th><th>Etu</th><th>Taka</th><th>Yht.</th></tr>
+      ${summary}
+    </table>
+    <h3>Tuloskortti</h3>
+    <table border="1" cellspacing="0" cellpadding="6">
+      <tr><th>Reikä</th><th>Par</th>${Array.from({length:state.players},(_,p)=>`<th>${esc(state.names[p])}</th>`).join("")}</tr>
+      ${rows}
+    </table>
+  </div>`;
+}
+
+
+function createShareScorecardHTML() {
+  const rows = state.scores.map((row,h)=>{
+    if(h===9) return `<tr><td colspan="${state.players+2}"><b>Takaysi</b></td></tr>`;
+    return `<tr><td>${h+1}</td><td>${(coursePars||pars)[h]}</td>${Array.from({length:state.players},(_,p)=>`<td>${row[p]||""}</td>`).join("")}</tr>`;
+  }).join("");
+  const summary=Array.from({length:state.players},(_,p)=>{
+    const front=state.scores.slice(0,9).reduce((s,r)=>s+(Number(r[p])||0),0);
+    const back=state.scores.slice(9).reduce((s,r)=>s+(Number(r[p])||0),0);
+    return `<tr><td>${esc(state.names[p])}</td><td>${esc(state.tees[p]||"")}</td><td>${front}</td><td>${back}</td><td>${front+back}</td></tr>`;
+  }).join("");
+  return `<h1>Golf Voice Scorecard AI</h1><h2>${esc(state.course||"Kenttä nimeämättä")}</h2><p>${new Date().toLocaleDateString("fi-FI")}</p><h3>Kierroksen yhteenveto</h3><table border="1"><tr><th>Pelaaja</th><th>Tii</th><th>Etu</th><th>Taka</th><th>Yht.</th></tr>${summary}</table><h3>Tuloskortti</h3><table border="1"><tr><th>Reikä</th><th>Par</th>${Array.from({length:state.players},(_,p)=>`<th>${esc(state.names[p])}</th>`).join("")}</tr>${rows}</table>`;
+}
+
 $("#shareScoreButton")?.addEventListener("click", async () => {
-  const history = JSON.parse(localStorage.getItem("golfVoiceRoundHistory") || "null");
-
-  if (!history) {
-    announce("Ei tallennettua kierrosta jaettavaksi.");
-    return;
-  }
-
-  const text = [
-    history.course,
-    history.date,
-    "",
-    ...history.players.map(p =>
-      `${p.name}\nUlos: ${p.front}\nSisään: ${p.back}\nYhteensä: ${p.total}`
-    )
-  ].join("\n");
-
+  const html = createShareScorecardHTML();
   if (navigator.share) {
     try {
-      await navigator.share({
-        title: "Golf tuloskortti",
-        text
-      });
-    } catch (e) {
-      // käyttäjä perui jaon
-    }
+      await navigator.share({title:"Golf tuloskortti", text: html.replace(/<[^>]+>/g,"")});
+    } catch(e) {}
   } else {
-    navigator.clipboard?.writeText(text);
-    announce("Tuloskortti kopioitu leikepöydälle.");
+    navigator.clipboard?.writeText(html);
+    announce("Tuloskortti luotu.");
   }
 });
 function selectCourse(courseId) {

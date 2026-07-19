@@ -49,3 +49,9 @@ label.toggle{display:flex;align-items:center;justify-content:space-between;gap:1
   .name{font-size:14px;padding:7px 1px}
   .score{font-size:16px}
 }
+
+
+/* Piilota testiloki-kortti */
+#testLogCard{
+  display:none!important;
+}
