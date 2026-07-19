@@ -46,16 +46,16 @@
 <button class="btn primary" id="voiceButton">🎤 Anna tulos puheella</button>
 
 <div class="status" id="status">Paina mikrofonia ja sano esimerkiksi <b>“birdie”</b>, <b>“Petri par”</b> tai <b>“korjaa neloseksi”</b>.</div>
-<div class="examples">Toimivia ilmauksia: “par”, “birdie”, “bogi”, “Petri par”, “Petri par, Kimmo bogi”, “par ja bogi”, “peru” sekä “korjaa Petrille neljä”.</div>
-<div class="grid quick">
+<div class="examples hidden">Toimivia ilmauksia: “par”, “birdie”, “bogi”, “Petri par”, “Petri par, Kimmo bogi”, “par ja bogi”, “peru” sekä “korjaa Petrille neljä”.</div>
+<div class="grid quick hidden">
 <button class="btn quick-score" data-speech="birdie">Birdie</button>
 <button class="btn quick-score" data-speech="par">Par</button>
 <button class="btn quick-score" data-speech="bogi">Bogi</button>
 <button class="btn quick-score" data-speech="tupla">Tupla</button>
 <button class="btn quick-score" data-speech="peru">Peru</button>
 </div>
-<button class="btn voice-test" id="testSpeechButton">🔊 Testaa puheääni</button>
-<label class="toggle"><span>🔊 Puhu vahvistukset</span><input id="speakToggle" type="checkbox" checked></label>
+<button class="btn voice-test hidden" id="testSpeechButton">🔊 Testaa puheääni</button>
+<label class="toggle hidden"><span>🔊 Puhu vahvistukset</span><input id="speakToggle" type="checkbox" checked></label>
 </section>
 
 <section class="card">
@@ -78,6 +78,7 @@
 <section class="card" id="historyCard" style="display:none;">
 <h2 class="title">KIERROSHISTORIA</h2>
 <div id="historyContent" class="status"></div>
+<button class="btn primary" id="shareScoreButton">📤 Jaa tuloskortti</button>
 </section>
 
 <section class="card" id="testLogCard">
@@ -89,7 +90,6 @@
 <h2 class="title">KIERROS VALMIS</h2>
 <p id="roundFinishSummary">Kierros on päättynyt.</p>
 <button class="btn primary" id="roundHistoryButton">📋 Kierroshistoria</button>
-<button class="btn primary" id="shareRoundButton">📤 Jaa tuloskortti</button>
 </section>
 
 
